@@ -51,6 +51,7 @@ func main() {
 	}
 
 	fmt.Println("Hello from pull-request")
+	fmt.Println("follow-up change")
 
 	// Set up global logger and filter engine
 	log.SetupGlobal()
