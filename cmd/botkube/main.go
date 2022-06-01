@@ -20,6 +20,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 
 	"golang.org/x/sync/errgroup"
@@ -48,6 +49,8 @@ func main() {
 	if !exists {
 		metricsPort = defaultMetricsPort
 	}
+
+	fmt.Println("Hello from pull-request")
 
 	// Set up global logger and filter engine
 	log.SetupGlobal()
