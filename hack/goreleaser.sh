@@ -22,7 +22,7 @@
 set -o errexit
 set -o pipefail
 
-IMAGE_REGISTRY="${IMAGE_REGISTRY:-ghcr.io/infracloudio}"
+IMAGE_REGISTRY="${IMAGE_REGISTRY:-ghcr.io/mszostok}"
 IMAGE_NAME="${IMAGE_NAME:-botkube}"
 
 prepare() {
