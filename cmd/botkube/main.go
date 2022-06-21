@@ -20,8 +20,8 @@
 package main
 
 import (
-	"os"
 	"fmt"
+	"os"
 
 	"golang.org/x/sync/errgroup"
 
