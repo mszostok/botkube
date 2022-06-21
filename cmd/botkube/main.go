@@ -21,6 +21,7 @@ package main
 
 import (
 	"os"
+	"fmt"
 
 	"golang.org/x/sync/errgroup"
 
@@ -48,6 +49,7 @@ func main() {
 	if !exists {
 		metricsPort = defaultMetricsPort
 	}
+	fmt.Println("test")
 
 	// Set up global logger and filter engine
 	log.SetupGlobal()
