@@ -26,6 +26,6 @@ entries:
     sources:
     - https://github.com/kubeshop/botkube
     urls:
-    - https://charts.botkube.io/botkube-v0.12.4.tgz
+    - https://mszostok.github.io/botkube/botkube-v0.12.4.tgz
     version: v0.12.4
 generated: "2022-07-05T16:49:31.158301+02:00"
