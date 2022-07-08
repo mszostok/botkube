@@ -36,7 +36,7 @@ You can also execute `kubectl` commands on K8s cluster via BotKube which helps d
 
 
 <p align="center">
-<img src="./docs/assets/main-demo.gif" />
+<img src="./docs/assets/main-demo.gif" width="600" />
 </p>
 
 ## Getting started
