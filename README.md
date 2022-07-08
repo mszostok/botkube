@@ -50,7 +50,7 @@ The documentation sources reside on the [botkube-docs](https://github.com/kubesh
 
 ## Features
 
-<img src="./docs/assets/icons/terminal-box-line.svg" width="12%" align="right"/>
+<img src="./docs/assets/icons/terminal-box-line.svg" width="12%" style="text-align: right"/>
 
 ### Execute `kubectl` commands
 
@@ -58,7 +58,7 @@ Same old Kubectl syntax - just a new interface. You do not have to learn anythin
 
 <br /><br />
 
-<img src="./docs/assets/icons/question-answer-line.svg" width="10%" align="left"/>
+<img src="./docs/assets/icons/question-answer-line.svg" width="10%" style="text-align: left"/>
 
 ### Support multiple communicator
 
