@@ -51,6 +51,9 @@ snapshot:
 release:
   ids:
     - botkube
+  # If set to true, will not auto-publish the release.
+  draft: true
+
 changelog:
   skip: true
 dockers:
