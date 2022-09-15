@@ -69,10 +69,13 @@ type slackMessage struct {
 func NewSlack(log logrus.FieldLogger, cfg config.Slack, executorFactory ExecutorFactory, reporter FatalErrorAnalyticsReporter) (*Slack, error) {
 	botToken := cfg.Token
 	appToken := SlackAppLevelToken
-	if strings.HasPrefix(cfg.BotToken, "xoxb") && strings.HasPrefix(cfg.AppToken, "xapp") {
+
+	if cfg.BotToken != "" && cfg.AppToken != "" { // it's already validated, so need to check that
+		log.Info("Using custom bot and app tokens")
 		botToken = cfg.BotToken
 		appToken = cfg.AppToken
 	}
+
 	client := slack.New(botToken, slack.OptionAppLevelToken(appToken))
 	authResp, err := client.AuthTest()
 	if err != nil {
