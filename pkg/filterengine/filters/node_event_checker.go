@@ -34,7 +34,7 @@ func (f *NodeEventsChecker) Run(_ context.Context, event *events.Event) error {
 		return nil
 	}
 
-	// Run filter only on Node events
+	// SelectAndRun filter only on Node events
 	if event.Kind != "Node" {
 		return nil
 	}

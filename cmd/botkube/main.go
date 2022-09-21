@@ -178,7 +178,7 @@ func run() error {
 		}
 		router.AddAnySinkBindings(commGroupCfg.Webhook.Bindings)
 
-		// Run bots
+		// SelectAndRun bots
 		if commGroupCfg.Slack.Enabled {
 			sb, err := bot.NewSlack(commGroupLogger.WithField(botLogFieldKey, "Slack"), commGroupName, commGroupCfg.Slack, executorFactory, reporter)
 			if err != nil {
@@ -231,7 +231,7 @@ func run() error {
 			})
 		}
 
-		// Run sinks
+		// SelectAndRun sinks
 		if commGroupCfg.Elasticsearch.Enabled {
 			es, err := sink.NewElasticsearch(commGroupLogger.WithField(sinkLogFieldKey, "Elasticsearch"), commGroupCfg.Elasticsearch, reporter)
 			if err != nil {

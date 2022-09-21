@@ -43,13 +43,13 @@ func Help(platform config.CommPlatformIntegration, clusterName, botName string) 
 			},
 			{
 				Base: Base{
-					Header:      "Run kubectl commands",
+					Header:      "SelectAndRun kubectl commands",
 					Description: fmt.Sprintf("You can run kubectl commands directly from %s!", cases.Title(language.English).String(string(platform))),
 				},
 				Buttons: []Button{
-					btnBuilder.ForCommandWithDescCmd("Run command", "get services"),
-					btnBuilder.ForCommandWithDescCmd("Run command", "get pods"),
-					btnBuilder.ForCommandWithDescCmd("Run command", "get deployments"),
+					btnBuilder.ForCommandWithDescCmd("SelectAndRun command", "get services"),
+					btnBuilder.ForCommandWithDescCmd("SelectAndRun command", "get pods"),
+					btnBuilder.ForCommandWithDescCmd("SelectAndRun command", "get deployments"),
 				},
 			},
 			{
