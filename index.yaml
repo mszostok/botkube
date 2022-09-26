@@ -3,7 +3,7 @@ entries:
   botkube:
   - apiVersion: v1
     appVersion: v9.99.9-dev
-    created: "2022-07-05T11:46:34.675184771Z"
+    created: "2022-09-26T09:51:33.089218438Z"
     description: Controller for the BotKube Slack app which helps you monitor your
       Kubernetes cluster, debug deployments and run specific checks on resources in
       the cluster.
@@ -26,6 +26,33 @@ entries:
     sources:
     - https://github.com/kubeshop/botkube
     urls:
-    - https://mszostok.github.io/botkube/botkube-v9.99.9-dev.tgz
+    - https://mszostok.github.io/charts/botkube-v9.99.9-dev.tgz
     version: v9.99.9-dev
-generated: "2022-07-05T11:46:34.672534665Z"
+  - apiVersion: v1
+    appVersion: 0.43.0-rc.1
+    created: "2022-09-26T09:51:33.086902247Z"
+    description: Controller for the BotKube Slack app which helps you monitor your
+      Kubernetes cluster, debug deployments and run specific checks on resources in
+      the cluster.
+    digest: 047835fbc8edc76d3cf0f57fda2433339d21b0f27f6f89e967165e84f369f71a
+    home: https://botkube.io
+    icon: https://botkube.io/images/botkube.ico
+    keywords:
+    - botkube
+    - kubernetes
+    - kubernetes-monitoring
+    - kubernetes-controller
+    - kubernetes-bot
+    - chatops
+    - bot
+    - botops
+    maintainers:
+    - email: dev-team@botkube.io
+      name: BotKube Dev Team
+    name: botkube
+    sources:
+    - https://github.com/kubeshop/botkube
+    urls:
+    - https://mszostok.github.io/charts/botkube-0.43.0-rc.1.tgz
+    version: 0.43.0-rc.1
+generated: "2022-09-26T09:51:33.070209992Z"
