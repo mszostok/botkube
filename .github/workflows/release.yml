@@ -8,6 +8,13 @@ env:
   git-user: github-actions[bot]
   git-email: 41898282+github-actions[bot]@users.noreply.github.com
 
+
+permissions:
+  contents: write
+  pages: write
+  pull-requests: write
+  packages: write
+
 jobs:
   release:
     runs-on: ubuntu-22.04
@@ -15,7 +22,6 @@ jobs:
       - name: Git checkout
         uses: actions/checkout@v3
         with:
-          token: ${{ secrets.GH_TOKEN }}
           fetch-depth: 0
 
       - name: Fetch all tags
@@ -35,12 +41,12 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GH_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Prepare GoReleaser Env
         run: |
-          echo "IMAGE_REPOSITORY=$GITHUB_REPOSITORY_OWNER/botkube" >> $GITHUB_ENV 
-          echo "TEST_IMAGE_REPOSITORY=$GITHUB_REPOSITORY_OWNER/botkube-test" >> $GITHUB_ENV 
+          echo "IMAGE_REPOSITORY=$GITHUB_REPOSITORY_OWNER/botkube" >> $GITHUB_ENV
+          echo "TEST_IMAGE_REPOSITORY=$GITHUB_REPOSITORY_OWNER/botkube-test" >> $GITHUB_ENV
 
       - name: Extract Previous Version
         id: prev-version
@@ -55,21 +61,21 @@ jobs:
         with:
           args: release --rm-dist
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           IMAGE_TAG: ${{ github.ref_name }}
           ANALYTICS_API_KEY: ${{ secrets.ANALYTICS_API_KEY }}
 
       - name: Create release
         uses: actions/github-script@v6
         with:
-          github-token: ${{ secrets.GH_TOKEN }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             try {
               const releaseNotes = await github.rest.repos.generateReleaseNotes({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 tag_name: "${{ github.ref_name }}",
-                previous_tag_name: "${{ steps.prev-version.outputs.previous-version }}" 
+                previous_tag_name: "${{ steps.prev-version.outputs.previous-version }}"
               });
               const release = await github.rest.repos.getReleaseByTag({
                 tag: "${{ github.ref_name }}",

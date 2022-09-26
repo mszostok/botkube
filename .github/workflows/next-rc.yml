@@ -12,6 +12,12 @@ env:
 concurrency:
   group: next-rc
 
+permissions:
+  contents: write
+  pages: write
+  pull-requests: write
+  packages: write
+
 jobs:
   next-rc:
     if: ${{ !contains(github.event.commits[0].message, '[skip-ci]') }}
@@ -22,9 +28,6 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.GH_TOKEN }}
-
       - name: Set git 'user.name' and 'user.email'
         run: |
           git config user.name "${{ env.GIT_USER }}"
@@ -41,7 +44,7 @@ jobs:
               echo "${BASE_TAG} is already in remote, exiting..."
               exit 1
           fi
-          
+
           LATEST_RELEASE_TAG=$(git ls-remote --tags origin | grep "refs/tags/${BASE_TAG}" | grep -v "\^{}" | awk -F \. '{print $4}' | sort -nr | head -1)
           NEW_RELEASE_REVISION=$(( $LATEST_RELEASE_TAG + 1 ))
           NEW_RELEASE_VERSION="${BASE_TAG}-rc.${NEW_RELEASE_REVISION}"
@@ -60,7 +63,7 @@ jobs:
       base-version: ${{ needs.next-rc.outputs.release-version }}
       next-version: ${{ needs.next-rc.outputs.new-rc-version }}
     secrets:
-      gh-token: ${{ secrets.GH_TOKEN }}
+      gh-token: ${{ secrets.GITHUB_TOKEN }}
 
   backport-pr:
     if: ${{ !contains(github.event.commits[0].message, '[skip-ci]') }}
@@ -69,7 +72,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          token: ${{ secrets.GH_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set git 'user.name' and 'user.email'
         run: |
@@ -79,7 +82,7 @@ jobs:
       - name: Create a pull request
         if: ${{ !endsWith(needs.process-chart.outputs.new-version, 'rc.1') }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           git checkout -b backport/${{ needs.process-chart.outputs.new-version }}
           git push origin backport/${{ needs.process-chart.outputs.new-version }}
