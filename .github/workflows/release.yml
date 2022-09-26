@@ -56,6 +56,16 @@ jobs:
           PREV_VERSION=$(git log --pretty=format:"%N" --show-notes="release/${BASE_TAG}" | awk NF | awk '{ print $2}')
           echo ::set-output name=previous-version::$PREV_VERSION
 
+      - name: Extract Tag name
+        id: draft-release-tag-name
+        run: |
+          export URL=$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          /repos/$GITHUB_REPOSITORY/releases --jq '.[] | select(.tag_name == "${{ github.ref_name }}") | .html_url')
+          export TAG="${URL##*/}"
+          echo "Found tag: $TAG"
+          echo ::set-output name=tag::$TAG
+
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3
         with:
@@ -74,11 +84,11 @@ jobs:
               const releaseNotes = await github.rest.repos.generateReleaseNotes({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                tag_name: "${{ github.ref_name }}",
+                tag_name: "${{ steps.draft-release-tag-name.outputs.tag }}",
                 previous_tag_name: "${{ steps.prev-version.outputs.previous-version }}"
               });
               const release = await github.rest.repos.getReleaseByTag({
-                tag: "${{ github.ref_name }}",
+                tag: "${{ steps.draft-release-tag-name.outputs.tag }}",
                 owner: context.repo.owner,
                 repo: context.repo.repo,
               });
