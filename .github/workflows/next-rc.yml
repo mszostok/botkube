@@ -63,7 +63,7 @@ jobs:
       base-version: ${{ needs.next-rc.outputs.release-version }}
       next-version: ${{ needs.next-rc.outputs.new-rc-version }}
     secrets:
-      gh-token: ${{ secrets.GITHUB_TOKEN }}
+      gh-token: ${{ secrets.GH_PAT }}
 
   backport-pr:
     if: ${{ !contains(github.event.commits[0].message, '[skip-ci]') }}
@@ -72,7 +72,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_PAT }}
 
       - name: Set git 'user.name' and 'user.email'
         run: |
@@ -82,7 +82,7 @@ jobs:
       - name: Create a pull request
         if: ${{ !endsWith(needs.process-chart.outputs.new-version, 'rc.1') }}
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}
         run: |
           git checkout -b backport/${{ needs.process-chart.outputs.new-version }}
           git push origin backport/${{ needs.process-chart.outputs.new-version }}
