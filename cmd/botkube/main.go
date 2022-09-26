@@ -57,6 +57,7 @@ func main() {
 
 // run wraps the main logic of the app to be able to properly clean up resources via deferred calls.
 func run() error {
+	fmt.Println("Simulate patch fix for 0.48")
 	// Load configuration
 	config.RegisterFlags(pflag.CommandLine)
 	conf, confDetails, err := config.LoadWithDefaults(config.FromEnvOrFlag)
