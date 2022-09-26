@@ -56,6 +56,15 @@ jobs:
           PREV_VERSION=$(git log --pretty=format:"%N" --show-notes="release/${BASE_TAG}" | awk NF | awk '{ print $2}')
           echo ::set-output name=previous-version::$PREV_VERSION
 
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v3
+        with:
+          args: release --rm-dist
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          IMAGE_TAG: ${{ github.ref_name }}
+          ANALYTICS_API_KEY: ${{ secrets.ANALYTICS_API_KEY }}
+
       - name: Extract Tag name
         id: draft-release-tag-name
         env:
@@ -67,15 +76,6 @@ jobs:
           export TAG="${URL##*/}"
           echo "Found tag: $TAG"
           echo ::set-output name=tag::$TAG
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3
-        with:
-          args: release --rm-dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          IMAGE_TAG: ${{ github.ref_name }}
-          ANALYTICS_API_KEY: ${{ secrets.ANALYTICS_API_KEY }}
 
       - name: Create release
         uses: actions/github-script@v6
