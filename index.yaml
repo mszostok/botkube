@@ -3,7 +3,7 @@ entries:
   botkube:
   - apiVersion: v1
     appVersion: v9.99.9-dev
-    created: "2022-09-26T11:44:34.556126076Z"
+    created: "2022-09-26T12:09:10.639434625Z"
     description: Controller for the BotKube Slack app which helps you monitor your
       Kubernetes cluster, debug deployments and run specific checks on resources in
       the cluster.
@@ -29,8 +29,35 @@ entries:
     - https://mszostok.github.io/charts/botkube-v9.99.9-dev.tgz
     version: v9.99.9-dev
   - apiVersion: v1
+    appVersion: 0.49.0-rc.1
+    created: "2022-09-26T12:09:10.63764526Z"
+    description: Controller for the BotKube Slack app which helps you monitor your
+      Kubernetes cluster, debug deployments and run specific checks on resources in
+      the cluster.
+    digest: a6726d5f6b663eadd078568a0b6129c7ec4e602d459c119787cdb8d6b2fd8185
+    home: https://botkube.io
+    icon: https://botkube.io/images/botkube.ico
+    keywords:
+    - botkube
+    - kubernetes
+    - kubernetes-monitoring
+    - kubernetes-controller
+    - kubernetes-bot
+    - chatops
+    - bot
+    - botops
+    maintainers:
+    - email: dev-team@botkube.io
+      name: BotKube Dev Team
+    name: botkube
+    sources:
+    - https://github.com/kubeshop/botkube
+    urls:
+    - https://mszostok.github.io/charts/botkube-0.49.0-rc.1.tgz
+    version: 0.49.0-rc.1
+  - apiVersion: v1
     appVersion: 0.48.0-rc.2
-    created: "2022-09-26T11:44:34.554380771Z"
+    created: "2022-09-26T12:09:10.635143609Z"
     description: Controller for the BotKube Slack app which helps you monitor your
       Kubernetes cluster, debug deployments and run specific checks on resources in
       the cluster.
@@ -57,7 +84,7 @@ entries:
     version: 0.48.0-rc.2
   - apiVersion: v1
     appVersion: 0.48.0-rc.1
-    created: "2022-09-26T11:44:34.552124364Z"
+    created: "2022-09-26T12:09:10.632038469Z"
     description: Controller for the BotKube Slack app which helps you monitor your
       Kubernetes cluster, debug deployments and run specific checks on resources in
       the cluster.
@@ -84,7 +111,7 @@ entries:
     version: 0.48.0-rc.1
   - apiVersion: v1
     appVersion: 0.47.0-rc.1
-    created: "2022-09-26T11:44:34.549826056Z"
+    created: "2022-09-26T12:09:10.629788913Z"
     description: Controller for the BotKube Slack app which helps you monitor your
       Kubernetes cluster, debug deployments and run specific checks on resources in
       the cluster.
@@ -111,7 +138,7 @@ entries:
     version: 0.47.0-rc.1
   - apiVersion: v1
     appVersion: 0.46.0-rc.1
-    created: "2022-09-26T11:44:34.547480549Z"
+    created: "2022-09-26T12:09:10.627531057Z"
     description: Controller for the BotKube Slack app which helps you monitor your
       Kubernetes cluster, debug deployments and run specific checks on resources in
       the cluster.
@@ -138,7 +165,7 @@ entries:
     version: 0.46.0-rc.1
   - apiVersion: v1
     appVersion: 0.45.0-rc.1
-    created: "2022-09-26T11:44:34.543267836Z"
+    created: "2022-09-26T12:09:10.625234301Z"
     description: Controller for the BotKube Slack app which helps you monitor your
       Kubernetes cluster, debug deployments and run specific checks on resources in
       the cluster.
@@ -165,7 +192,7 @@ entries:
     version: 0.45.0-rc.1
   - apiVersion: v1
     appVersion: 0.44.0-rc.1
-    created: "2022-09-26T11:44:34.541035729Z"
+    created: "2022-09-26T12:09:10.622894047Z"
     description: Controller for the BotKube Slack app which helps you monitor your
       Kubernetes cluster, debug deployments and run specific checks on resources in
       the cluster.
@@ -192,7 +219,7 @@ entries:
     version: 0.44.0-rc.1
   - apiVersion: v1
     appVersion: 0.43.0-rc.1
-    created: "2022-09-26T11:44:34.538761622Z"
+    created: "2022-09-26T12:09:10.620290198Z"
     description: Controller for the BotKube Slack app which helps you monitor your
       Kubernetes cluster, debug deployments and run specific checks on resources in
       the cluster.
@@ -217,4 +244,4 @@ entries:
     urls:
     - https://mszostok.github.io/charts/botkube-0.43.0-rc.1.tgz
     version: 0.43.0-rc.1
-generated: "2022-09-26T11:44:34.536217814Z"
+generated: "2022-09-26T12:09:10.616785366Z"
