@@ -82,7 +82,7 @@ jobs:
       - name: Create a pull request
         if: ${{ !endsWith(needs.process-chart.outputs.new-version, 'rc.1') }}
         env:
-          GH_PAT: ${{ secrets.GH_PAT }}
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           git checkout -b backport/${{ needs.process-chart.outputs.new-version }}
           git push origin backport/${{ needs.process-chart.outputs.new-version }}
