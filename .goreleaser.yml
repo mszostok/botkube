@@ -24,10 +24,10 @@ builds:
       - linux
     goarch:
       - amd64
-      - arm
-      - arm64
-    goarm:
-      - 7
+#      - arm
+#      - arm64
+#    goarm:
+#      - 7
   - id: botkube-test
     command: test
     binary: botkube-e2e.test
@@ -120,6 +120,3 @@ docker_manifests:
       - "{{.Env.IMAGE_REGISTRY}}/{{.Env.IMAGE_REPOSITORY}}:{{ .Env.IMAGE_TAG }}-amd64"
       - "{{.Env.IMAGE_REGISTRY}}/{{.Env.IMAGE_REPOSITORY}}:{{ .Env.IMAGE_TAG }}-arm64"
       - "{{.Env.IMAGE_REGISTRY}}/{{.Env.IMAGE_REPOSITORY}}:{{ .Env.IMAGE_TAG }}-armv7"
-      - "{{.Env.IMAGE_REGISTRY}}/{{.Env.TEST_IMAGE_REPOSITORY}}:{{ .Env.IMAGE_TAG }}-amd64"
-      - "{{.Env.IMAGE_REGISTRY}}/{{.Env.TEST_IMAGE_REPOSITORY}}:{{ .Env.IMAGE_TAG }}-arm64"
-      - "{{.Env.IMAGE_REGISTRY}}/{{.Env.TEST_IMAGE_REPOSITORY}}:{{ .Env.IMAGE_TAG }}-armv7"

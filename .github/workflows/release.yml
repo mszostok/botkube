@@ -58,6 +58,8 @@ jobs:
 
       - name: Extract Tag name
         id: draft-release-tag-name
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           export URL=$(gh api \
           -H "Accept: application/vnd.github+json" \
