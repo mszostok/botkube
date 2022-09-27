@@ -4,8 +4,8 @@ set -o errexit
 set -o pipefail
 
 IMAGE_REGISTRY="${IMAGE_REGISTRY:-ghcr.io}"
-IMAGE_REPOSITORY="${IMAGE_REPOSITORY:-kubeshop/botkube}"
-TEST_IMAGE_REPOSITORY="${TEST_IMAGE_REPOSITORY:-kubeshop/botkube-test}"
+IMAGE_REPOSITORY="${IMAGE_REPOSITORY:-mszostok/botkube}"
+TEST_IMAGE_REPOSITORY="${TEST_IMAGE_REPOSITORY:-mszostok/botkube-test}"
 IMAGE_SAVE_LOAD_DIR="${IMAGE_SAVE_LOAD_DIR:-/tmp/botkube-images}"
 IMAGE_PLATFORM="${IMAGE_PLATFORM:-linux/amd64}"
 
