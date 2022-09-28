@@ -59,7 +59,7 @@ func main() {
 func run() error {
 	// Load configuration
 	config.RegisterFlags(pflag.CommandLine)
-	fmt.Println("Testing patching")
+	fmt.Println("Testing patching v0.55.1")
 	conf, confDetails, err := config.LoadWithDefaults(config.FromEnvOrFlag)
 	if err != nil {
 		return fmt.Errorf("while loading app configuration: %w", err)
