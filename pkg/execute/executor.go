@@ -41,7 +41,7 @@ const (
 	// override the message to human-readable command name.
 	humanReadableCommandListName = "Available kubectl commands"
 
-	lineLimitToShowFilter = 16
+	lineLimitToShowFilter = 15
 )
 
 // DefaultExecutor is a default implementations of Executor
@@ -163,19 +163,9 @@ func (e *DefaultExecutor) Execute() interactive.Message {
 		}
 		// Show Filter Input if command response is more than `lineLimitToShowFilter`
 		if len(strings.SplitN(msg, "\n", lineLimitToShowFilter)) == lineLimitToShowFilter {
-			message.Inputs = []interactive.Input{
-				{
-					DispatchedAction: true,
-					Element: interactive.InputElement{
-						Type: interactive.PlainTextInput,
-					},
-					Label: interactive.InputLabel{
-						Type: interactive.PlainText,
-						Text: "Filter Output",
-					},
-				},
-			}
+			message.Inputs = append(message.Inputs, e.filterInput(command))
 		}
+
 		return message
 	}
 
@@ -265,6 +255,20 @@ func (e *DefaultExecutor) Execute() interactive.Message {
 	}
 
 	return msg
+}
+
+func (e *DefaultExecutor) filterInput(id string) interactive.Input {
+	return interactive.Input{
+		ID:               id,
+		DispatchedAction: true,
+		Element: interactive.InputElement{
+			Type: interactive.PlainTextInput,
+		},
+		Label: interactive.InputLabel{
+			Type: interactive.PlainText,
+			Text: "Filter Output",
+		},
+	}
 }
 
 func (e *DefaultExecutor) reportCommand(verb string) {

@@ -24,7 +24,7 @@ import (
 //    - review all the methods and see if they can be simplified.
 
 // slackMaxMessageSize max size before a message should be uploaded as a file.
-const slackMaxMessageSize = 3990
+const slackMaxMessageSize = 3001
 
 var _ Bot = &Slack{}
 
