@@ -11,7 +11,6 @@ import (
 	"github.com/google/go-github/v44/github"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sanity-io/litter"
 	segment "github.com/segmentio/analytics-go"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -100,8 +99,8 @@ func run() error {
 
 	errGroup, ctx := errgroup.WithContext(ctx)
 
-	litter.Dump(conf.Plugins)
-	litter.Dump(conf.PluginsExecutors)
+	// FIXME: collect enabled executors
+	// it can be done by creating collector for enabled bindings and shared with router
 	pluginManager := plugin.NewManager(logger, conf.Plugins, conf.PluginsExecutors)
 
 	err = pluginManager.Start(ctx)

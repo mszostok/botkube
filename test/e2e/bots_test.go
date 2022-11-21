@@ -41,13 +41,7 @@ type Config struct {
 			BotkubePluginRepoURL          string `envconfig:"default=BOTKUBE_PLUGINS_REPOSITORIES_BOTKUBE"`
 		}
 	}
-	Plugins struct {
-		BinariesDirectory string `envconfig:"default=./dist"`
-		Server            struct {
-			Host string `envconfig:"default=http://host.k3d.internal"`
-			Port int    `envconfig:"default=3000"`
-		}
-	}
+	Plugins   PluginsConfig
 	ConfigMap struct {
 		Namespace string `envconfig:"default=botkube"`
 	}
@@ -156,9 +150,9 @@ func runBotTest(t *testing.T,
 	require.NoError(t, err)
 
 	t.Log("Starting plugin server...")
-	indexEndpoint, startServer := PluginServer(t, appCfg.Plugins.Server.Host, appCfg.Plugins.Server.Port, appCfg.Plugins.BinariesDirectory)
+	indexEndpoint, startServerFn := NewPluginServer(appCfg.Plugins)
 	go func() {
-		require.NoError(t, startServer())
+		require.NoError(t, startServerFn())
 	}()
 
 	t.Logf("Setting up test %s setup...", driverType)
@@ -230,10 +224,20 @@ func runBotTest(t *testing.T,
 
 	t.Run("Filters list", func(t *testing.T) {
 		command := "filters list"
-		expectedBody := codeBlock(heredoc.Doc(fmt.Sprintf(`
+		expectedBody := codeBlock(heredoc.Docf(`
 			FILTER                  ENABLED DESCRIPTION
 			NodeEventsChecker       false   Sends notifications on node level critical events.
-			ObjectAnnotationChecker true    Filters or reroutes events based on %s Kubernetes resource annotations.`, annotation)))
+			ObjectAnnotationChecker true    Filters or reroutes events based on %s Kubernetes resource annotations.`, annotation))
+		expectedMessage := fmt.Sprintf("%s\n%s", cmdHeader(command), expectedBody)
+
+		botDriver.PostMessageToBot(t, botDriver.Channel().Identifier(), command)
+		err := botDriver.WaitForLastMessageEqual(botDriver.BotUserID(), botDriver.Channel().ID(), expectedMessage)
+		assert.NoError(t, err)
+	})
+
+	t.Run("Plugin execution", func(t *testing.T) {
+		command := "echo test"
+		expectedBody := codeBlock(command)
 		expectedMessage := fmt.Sprintf("%s\n%s", cmdHeader(command), expectedBody)
 
 		botDriver.PostMessageToBot(t, botDriver.Channel().Identifier(), command)

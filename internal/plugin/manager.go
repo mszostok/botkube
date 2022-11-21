@@ -37,12 +37,9 @@ var pluginMap = map[string]plugin.Plugin{
 	executorPluginName: &executor.Plugin{},
 }
 
-type Metadata struct {
-	RepoName   string
-	PluginName string
-	Version    string
-
-	Client *plugin.Client
+type EnabledPlugin struct {
+	Client  executor.Executor
+	Cleanup func()
 }
 
 type Manager struct {
@@ -55,7 +52,7 @@ type Manager struct {
 
 type Data struct {
 	RepoIndex      map[string]map[string]IndexEntry
-	EnabledPlugins []Metadata // FIXME: maybe map?
+	EnabledPlugins map[string]EnabledPlugin
 }
 
 func NewManager(logger logrus.FieldLogger, cfg config.Plugins, executors map[string]config.PluginsExecutors) *Manager {
@@ -64,15 +61,12 @@ func NewManager(logger logrus.FieldLogger, cfg config.Plugins, executors map[str
 		httpClient:      newHTTPClient(),
 		executorsConfig: executors,
 		executors: Data{
-			RepoIndex: map[string]map[string]IndexEntry{},
+			RepoIndex:      map[string]map[string]IndexEntry{},
+			EnabledPlugins: map[string]EnabledPlugin{},
 		},
 		log: logger.WithField("component", "Plugin Manager"),
 	}
 }
-
-// Load() takes the list of all enabled sources/executors and load them?
-// Returns error if not found?
-// Before tries to download it with a given provider?
 
 func (m *Manager) Start(ctx context.Context) error {
 	if err := m.loadRepositoriesMetadata(ctx); err != nil {
@@ -123,54 +117,30 @@ func (m *Manager) loadAllEnabledPlugins(ctx context.Context) error {
 			"binPath": binPath,
 		}).Info("Registering executor plugin.")
 
-		m.executors.EnabledPlugins = append(m.executors.EnabledPlugins, Metadata{
-			RepoName:   repoName,
-			PluginName: pluginName,
-			Version:    info.Version,
-			Client:     m.createGRPCClient(binPath),
-		})
+		client, cleanup, err := m.createGRPCClient(binPath)
+		if err != nil {
+			if cleanup != nil {
+				cleanup()
+			}
+			return fmt.Errorf("while creating gRPC client: %w", err)
+		}
+
+		m.executors.EnabledPlugins[name] = EnabledPlugin{
+			Client:  client,
+			Cleanup: cleanup,
+		}
 	}
 
 	return nil
 }
 
 func (m *Manager) GetExecutor(name string) (executor.Executor, error) {
-	repoName, pluginName, found := strings.Cut(name, "/")
-	if !found {
-		return nil, fmt.Errorf("plugin %q doesn't follow required {repo_name}/{plugin_name} syntax", name)
-	}
-
-	getClient := func() *plugin.Client {
-		for _, p := range m.executors.EnabledPlugins {
-			if p.RepoName == repoName && p.PluginName == pluginName {
-				return p.Client
-			}
-		}
-		return nil
-	}
-
-	client := getClient()
-	if client == nil {
+	client, found := m.executors.EnabledPlugins[name]
+	if !found || client.Client == nil {
 		return nil, fmt.Errorf("client for plugin %q not found", name)
 	}
 
-	rpcClient, err := client.Client()
-	if err != nil {
-		return nil, err
-	}
-
-	// TODO: should be called only once?
-	raw, err := rpcClient.Dispense(executorPluginName)
-	if err != nil {
-		return nil, err
-	}
-
-	concreteCli, ok := raw.(executor.Executor)
-	if !ok {
-		return nil, fmt.Errorf("registered client doesn't implemented executor interface")
-	}
-
-	return concreteCli, nil
+	return client.Client, nil
 }
 
 func (m *Manager) Shutdown() {
@@ -178,10 +148,12 @@ func (m *Manager) Shutdown() {
 	for _, p := range m.executors.EnabledPlugins {
 		wg.Add(1)
 
-		go func(client *plugin.Client) {
-			client.Kill()
+		go func(close func()) {
+			if close != nil {
+				close()
+			}
 			wg.Done()
-		}(p.Client)
+		}(p.Cleanup)
 	}
 
 	wg.Wait()
@@ -259,8 +231,8 @@ func (m *Manager) fetchIndex(ctx context.Context, path, url string) error {
 	return nil
 }
 
-func (m *Manager) createGRPCClient(path string) *plugin.Client {
-	return plugin.NewClient(&plugin.ClientConfig{
+func (*Manager) createGRPCClient(path string) (executor.Executor, func(), error) {
+	cli := plugin.NewClient(&plugin.ClientConfig{
 		Plugins:          pluginMap,
 		Cmd:              exec.Command(path),
 		AllowedProtocols: []plugin.Protocol{plugin.ProtocolGRPC},
@@ -270,6 +242,23 @@ func (m *Manager) createGRPCClient(path string) *plugin.Client {
 			MagicCookieValue: api.HandshakeConfig.MagicCookieValue,
 		},
 	})
+
+	rpcClient, err := cli.Client()
+	if err != nil {
+		return nil, cli.Kill, err
+	}
+
+	raw, err := rpcClient.Dispense(executorPluginName)
+	if err != nil {
+		return nil, cli.Kill, err
+	}
+
+	concreteCli, ok := raw.(executor.Executor)
+	if !ok {
+		return nil, cli.Kill, fmt.Errorf("registered client doesn't implemented executor interface")
+	}
+
+	return concreteCli, cli.Kill, nil
 }
 
 func (m *Manager) downloadPlugin(ctx context.Context, binPath string, info IndexEntry) error {

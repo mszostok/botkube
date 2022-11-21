@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"testing"
 
 	"gopkg.in/yaml.v3"
 
@@ -18,27 +17,36 @@ const (
 	indexFileEndpoint    = "/botkube.yaml"
 )
 
-func PluginServer(t *testing.T, host string, port int, dir string) (string, func() error) {
-	fs := http.FileServer(http.Dir(dir))
+type PluginsConfig struct {
+	BinariesDirectory string
+	Server            struct {
+		Host string `envconfig:"default=http://host.k3d.internal"`
+		Port int    `envconfig:"default=3000"`
+	}
+}
+
+func NewPluginServer(cfg PluginsConfig) (string, func() error) {
+	fs := http.FileServer(http.Dir(cfg.BinariesDirectory))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 
-	basePath := fmt.Sprintf("%s:%d", host, port)
-	http.HandleFunc("/botkube.yaml", func(w http.ResponseWriter, _ *http.Request) {
-		idx, err := buildIndex(basePath, dir)
+	basePath := fmt.Sprintf("%s:%d", cfg.Server.Host, cfg.Server.Port)
+	http.HandleFunc(indexFileEndpoint, func(w http.ResponseWriter, _ *http.Request) {
+		idx, err := buildIndex(basePath, cfg.BinariesDirectory)
 		if err != nil {
+			log.Println("idx", err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
 		out, err := yaml.Marshal(idx)
 		if err != nil {
+			log.Println("marshal", err.Error())
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 
-		w.WriteHeader(http.StatusOK)
 		w.Write(out)
 	})
 
-	addr := fmt.Sprintf(":%d", port)
+	addr := fmt.Sprintf(":%d", cfg.Server.Port)
 	log.Printf("Listening on %s...", addr)
 
 	return basePath + indexFileEndpoint, func() error {
