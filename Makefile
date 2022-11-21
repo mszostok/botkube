@@ -1,5 +1,5 @@
 .DEFAULT_GOAL := build
-.PHONY: container-image test test-integration-slack test-integration-discord build pre-build publish lint lint-fix go-import-fmt system-check save-images load-and-push-images
+.PHONY: container-image test test-integration-slack test-integration-discord build pre-build publish lint lint-fix go-import-fmt system-check save-images load-and-push-images gen-grpc-resources build-plugins
 
 # Show this help.
 help:
@@ -68,6 +68,10 @@ system-check:
 	echo 'GOARCH: $(shell go env GOARCH)' ; \
 	echo 'System information checks passed.'; \
 	fi ;
+
+# Generate gRPC Go code for client and server.
+gen-grpc-resources:
+	@./hack/gen-grpc-resources.sh
 
 # Pre-build checks
 pre-build: system-check

@@ -18,7 +18,7 @@ const (
 )
 
 type PluginsConfig struct {
-	BinariesDirectory string
+	BinariesDirectory string `envconfig:"default=dist"`
 	Server            struct {
 		Host string `envconfig:"default=http://host.k3d.internal"`
 		Port int    `envconfig:"default=3000"`

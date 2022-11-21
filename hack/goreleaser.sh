@@ -94,12 +94,7 @@ build() {
 
 build_plugins() {
   prepare
-  docker run --rm --privileged \
-    -v $PWD:/go/src/github.com/kubeshop/botkube \
-    -v /var/run/docker.sock:/var/run/docker.sock \
-    -w /go/src/github.com/kubeshop/botkube \
-    -e ANALYTICS_API_KEY="${ANALYTICS_API_KEY}" \
-    goreleaser/goreleaser build -f .goreleaser.plugin.yaml --rm-dist --snapshot
+  goreleaser build -f .goreleaser.plugin.yaml --rm-dist --snapshot
 }
 
 build_single() {
