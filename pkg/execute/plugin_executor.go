@@ -118,12 +118,12 @@ func (e *PluginExecutor) getEnabledPlugins(bindings []string, cmdName string) ([
 	)
 
 	for _, name := range bindings {
-		executors, found := e.cfg.PluginsExecutors[name]
+		executors, found := e.cfg.Executors[name]
 		if !found {
 			continue
 		}
 
-		for key, executor := range executors {
+		for key, executor := range executors.Plugins {
 			if !executor.Enabled {
 				continue
 			}

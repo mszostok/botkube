@@ -101,7 +101,7 @@ func run() error {
 
 	// FIXME: collect enabled executors
 	// it can be done by creating collector for enabled bindings and shared with router
-	pluginManager := plugin.NewManager(logger, conf.Plugins, conf.PluginsExecutors)
+	pluginManager := plugin.NewManager(logger, conf.Plugins, conf.Executors)
 
 	err = pluginManager.Start(ctx)
 	if err != nil {

@@ -47,7 +47,7 @@ type Manager struct {
 	cfg             config.Plugins
 	httpClient      *http.Client
 	executors       Data
-	executorsConfig map[string]config.PluginsExecutors
+	executorsConfig map[string]config.Executors
 }
 
 type Data struct {
@@ -55,7 +55,7 @@ type Data struct {
 	EnabledPlugins map[string]EnabledPlugin
 }
 
-func NewManager(logger logrus.FieldLogger, cfg config.Plugins, executors map[string]config.PluginsExecutors) *Manager {
+func NewManager(logger logrus.FieldLogger, cfg config.Plugins, executors map[string]config.Executors) *Manager {
 	return &Manager{
 		cfg:             cfg,
 		httpClient:      newHTTPClient(),
@@ -84,7 +84,7 @@ func (m *Manager) loadAllEnabledPlugins(ctx context.Context) error {
 	// we start executor only once, so collect only unique names
 	allEnabledExecutors := map[string]struct{}{}
 	for _, groupItems := range m.executorsConfig {
-		for name, executor := range groupItems {
+		for name, executor := range groupItems.Plugins {
 			if !executor.Enabled {
 				continue
 			}

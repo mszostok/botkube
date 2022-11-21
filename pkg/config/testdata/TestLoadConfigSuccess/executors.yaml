@@ -18,3 +18,8 @@ executors:
       defaultNamespace: default
       # Set true to enable commands execution from configured channel only
       restrictAccess: false
+  'plugin-based':
+    botkube/echo: # <repo>/<plugin> is syntax for plugin based executors
+      enabled: true
+      config:
+        changeResponseToUpperCase: true

@@ -2,7 +2,7 @@ package config
 
 import (
 	_ "embed"
-	fmt "fmt"
+	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -124,13 +124,11 @@ const (
 
 // Config structure of configuration yaml file
 type Config struct {
-	Actions   Actions              `yaml:"actions" validate:"dive"`
-	Sources   map[string]Sources   `yaml:"sources" validate:"dive"`
-	Executors map[string]Executors `yaml:"executors" validate:"dive"`
-	// TODO(https://github.com/kubeshop/botkube/issues/841): remove once executors are extracted as plugins.
-	PluginsExecutors map[string]PluginsExecutors `yaml:"executors"`
-	Communications   map[string]Communications   `yaml:"communications"  validate:"required,min=1,dive"`
-	Filters          Filters                     `yaml:"filters"`
+	Actions        Actions                   `yaml:"actions" validate:"dive"`
+	Sources        map[string]Sources        `yaml:"sources" validate:"dive"`
+	Executors      map[string]Executors      `yaml:"executors" validate:"dive"`
+	Communications map[string]Communications `yaml:"communications"  validate:"required,min=1,dive"`
+	Filters        Filters                   `yaml:"filters"`
 
 	Analytics     Analytics  `yaml:"analytics"`
 	Settings      Settings   `yaml:"settings"`
@@ -274,7 +272,8 @@ type PluginExecutor struct {
 
 // Executors contains executors configuration parameters.
 type Executors struct {
-	Kubectl Kubectl `yaml:"kubectl"`
+	Kubectl Kubectl          `yaml:"kubectl"`
+	Plugins PluginsExecutors `koanf:",remain"`
 }
 
 // Filters contains configuration for built-in filters.
@@ -626,12 +625,10 @@ func LoadWithDefaults(getCfgPaths PathsGetter) (*Config, LoadWithDefaultsDetails
 	}
 
 	var cfg Config
-	err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{Tag: "yaml"})
+	err = k.Unmarshal("", &cfg)
 	if err != nil {
 		return nil, LoadWithDefaultsDetails{}, err
 	}
-
-	removeBuiltinExecutors(cfg.PluginsExecutors)
 
 	result, err := ValidateStruct(cfg)
 	if err != nil {
@@ -677,21 +674,6 @@ func normalizeConfigEnvName(name string) string {
 	}
 
 	return strings.ReplaceAll(buff.String(), nestedFieldDelimiter, configDelimiter)
-}
-
-// TODO(https://github.com/kubeshop/botkube/issues/841): remove once executors are extracted as plugins.
-func removeBuiltinExecutors(groups map[string]PluginsExecutors) {
-	for groupName, executors := range groups {
-		for key := range executors {
-			_, name, _ := strings.Cut(key, "/")
-			if name == "" {
-				delete(executors, key)
-			}
-		}
-		if len(executors) == 0 {
-			delete(groups, groupName)
-		}
-	}
 }
 
 // sortCfgFiles sorts the config files so that the files that has specialConfigFileNamePrefix are moved to the end of the slice.
