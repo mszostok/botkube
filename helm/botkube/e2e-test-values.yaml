@@ -147,6 +147,18 @@ executors:
         verbs: [ "port-forward" ]
         resources: [ "deployments" ]
 
+  'plugin-based': # FIXME: this should be generic? how we know which executors are enabled? what about settings?
+    botkube/echo: # <repo>/<plugin> is syntax for plugin based executors
+      enabled: true
+      # version: v1.0.0
+      config:
+        changeResponseToUpperCase: true
+
+plugins:
+  cacheDir: "/tmp"
+  repositories:
+    botkube: https://raw.githubusercontent.com/kubeshop/botkube/main/plugins.yaml
+
 actions:
   'get-created-resource':
     enabled: true

@@ -38,6 +38,14 @@ type Config struct {
 			DiscordEnabledName            string `envconfig:"default=BOTKUBE_COMMUNICATIONS_DEFAULT-GROUP_DISCORD_ENABLED"`
 			DefaultDiscordChannelIDName   string `envconfig:"default=BOTKUBE_COMMUNICATIONS_DEFAULT-GROUP_DISCORD_CHANNELS_DEFAULT_ID"`
 			SecondaryDiscordChannelIDName string `envconfig:"default=BOTKUBE_COMMUNICATIONS_DEFAULT-GROUP_DISCORD_CHANNELS_SECONDARY_ID"`
+			BotkubePluginRepoURL          string `envconfig:"default=BOTKUBE_PLUGINS_REPOSITORIES_BOTKUBE"`
+		}
+	}
+	Plugins struct {
+		BinariesDirectory string `envconfig:"default=./dist"`
+		Server            struct {
+			Host string `envconfig:"default=http://host.k3d.internal"`
+			Port int    `envconfig:"default=3000"`
 		}
 	}
 	ConfigMap struct {
@@ -147,6 +155,12 @@ func runBotTest(t *testing.T,
 	k8sCli, err := kubernetes.NewForConfig(k8sConfig)
 	require.NoError(t, err)
 
+	t.Log("Starting plugin server...")
+	indexEndpoint, startServer := PluginServer(t, appCfg.Plugins.Server.Host, appCfg.Plugins.Server.Port, appCfg.Plugins.BinariesDirectory)
+	go func() {
+		require.NoError(t, startServer())
+	}()
+
 	t.Logf("Setting up test %s setup...", driverType)
 	botDriver.InitUsers(t)
 	cleanUpFns := botDriver.InitChannels(t)
@@ -166,7 +180,7 @@ func runBotTest(t *testing.T,
 
 	t.Log("Patching Deployment with test env variables...")
 	deployNsCli := k8sCli.AppsV1().Deployments(appCfg.Deployment.Namespace)
-	revertDeployFn := setTestEnvsForDeploy(t, appCfg, deployNsCli, botDriver.Type(), channels)
+	revertDeployFn := setTestEnvsForDeploy(t, appCfg, deployNsCli, botDriver.Type(), channels, indexEndpoint)
 	t.Cleanup(func() { revertDeployFn(t) })
 
 	t.Log("Waiting for Deployment")

@@ -2,7 +2,7 @@ package config
 
 import (
 	_ "embed"
-	"fmt"
+	fmt "fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -124,15 +124,23 @@ const (
 
 // Config structure of configuration yaml file
 type Config struct {
-	Actions        Actions                   `yaml:"actions" validate:"dive"`
-	Sources        map[string]Sources        `yaml:"sources" validate:"dive"`
-	Executors      map[string]Executors      `yaml:"executors" validate:"dive"`
-	Communications map[string]Communications `yaml:"communications"  validate:"required,min=1,dive"`
-	Filters        Filters                   `yaml:"filters"`
+	Actions   Actions              `yaml:"actions" validate:"dive"`
+	Sources   map[string]Sources   `yaml:"sources" validate:"dive"`
+	Executors map[string]Executors `yaml:"executors" validate:"dive"`
+	// TODO(https://github.com/kubeshop/botkube/issues/841): remove once executors are extracted as plugins.
+	PluginsExecutors map[string]PluginsExecutors `yaml:"executors"`
+	Communications   map[string]Communications   `yaml:"communications"  validate:"required,min=1,dive"`
+	Filters          Filters                     `yaml:"filters"`
 
 	Analytics     Analytics  `yaml:"analytics"`
 	Settings      Settings   `yaml:"settings"`
 	ConfigWatcher CfgWatcher `yaml:"configWatcher"`
+	Plugins       Plugins    `yaml:"plugins"`
+}
+
+type Plugins struct {
+	CacheDir     string            `yaml:"cacheDir"`
+	Repositories map[string]string `yaml:"repositories"`
 }
 
 // ChannelBindingsByName contains configuration bindings per channel.
@@ -254,6 +262,14 @@ type IngressRecommendations struct {
 
 	// TLSSecretValid notifies about Ingress resources with invalid TLS secret reference.
 	TLSSecretValid *bool `yaml:"tlsSecretValid,omitempty"`
+}
+
+// PluginsExecutors contains plugins executors configuration parameters.
+type PluginsExecutors map[string]PluginExecutor
+
+type PluginExecutor struct {
+	Enabled bool
+	Config  any
 }
 
 // Executors contains executors configuration parameters.
@@ -615,6 +631,8 @@ func LoadWithDefaults(getCfgPaths PathsGetter) (*Config, LoadWithDefaultsDetails
 		return nil, LoadWithDefaultsDetails{}, err
 	}
 
+	removeBuiltinExecutors(cfg.PluginsExecutors)
+
 	result, err := ValidateStruct(cfg)
 	if err != nil {
 		return nil, LoadWithDefaultsDetails{}, fmt.Errorf("while validating loaded configuration: %w", err)
@@ -659,6 +677,21 @@ func normalizeConfigEnvName(name string) string {
 	}
 
 	return strings.ReplaceAll(buff.String(), nestedFieldDelimiter, configDelimiter)
+}
+
+// TODO(https://github.com/kubeshop/botkube/issues/841): remove once executors are extracted as plugins.
+func removeBuiltinExecutors(groups map[string]PluginsExecutors) {
+	for groupName, executors := range groups {
+		for key := range executors {
+			_, name, _ := strings.Cut(key, "/")
+			if name == "" {
+				delete(executors, key)
+			}
+		}
+		if len(executors) == 0 {
+			delete(groups, groupName)
+		}
+	}
 }
 
 // sortCfgFiles sorts the config files so that the files that has specialConfigFileNamePrefix are moved to the end of the slice.

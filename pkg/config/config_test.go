@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/MakeNowJust/heredoc"
+	"github.com/sanity-io/litter"
 	"github.com/spf13/pflag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,6 +25,7 @@ func TestLoadConfigSuccess(t *testing.T) {
 	t.Setenv("BOTKUBE_SETTINGS_CLUSTER__NAME", "cluster-name-from-env")
 	t.Setenv("BOTKUBE_SETTINGS_KUBECONFIG", "kubeconfig-from-env")
 	t.Setenv("BOTKUBE_SETTINGS_METRICS__PORT", "1313")
+	t.Setenv("BOTKUBE_PLUGINS_REPOSITORIES_BOTKUBE", "http://localhost:3000/botkube.yaml")
 
 	// when
 	gotCfg, _, err := config.LoadWithDefaults(func() []string {
@@ -45,6 +47,42 @@ func TestLoadConfigSuccess(t *testing.T) {
 	require.NoError(t, err)
 
 	golden.Assert(t, string(gotData), filepath.Join(t.Name(), "config.golden.yaml"))
+}
+
+// This test is based on golden file. To update golden file, run:
+// go test -run=TestLoadConfigSuccess ./pkg/config/... -test.update-golden
+func TestLoadConfigSuccessV2(t *testing.T) {
+	// given
+	t.Setenv("BOTKUBE_COMMUNICATIONS_DEFAULT-WORKSPACE_SLACK_TOKEN", "xoxb-token-from-env")
+	t.Setenv("BOTKUBE_COMMUNICATIONS_DEFAULT-WORKSPACE_SOCKET__SLACK_BOT__TOKEN", "xoxb-token-from-env")
+	t.Setenv("BOTKUBE_COMMUNICATIONS_DEFAULT-WORKSPACE_SOCKET__SLACK_APP__TOKEN", "xapp-token-from-env")
+	t.Setenv("BOTKUBE_SETTINGS_CLUSTER__NAME", "cluster-name-from-env")
+	t.Setenv("BOTKUBE_SETTINGS_KUBECONFIG", "kubeconfig-from-env")
+	t.Setenv("BOTKUBE_SETTINGS_METRICS__PORT", "1313")
+	t.Setenv("BOTKUBE_PLUGINS_REPOSITORIES_BOTKUBE", "http://localhost:3000/botkube.yaml")
+
+	// when
+	gotCfg, _, err := config.LoadWithDefaults(func() []string {
+		return []string{
+			testdataFile(t, "config-all.yaml"),
+			testdataFile(t, "config-global.yaml"),
+			testdataFile(t, "executors.yaml"),
+		}
+	})
+
+	//then
+	require.NoError(t, err)
+	require.NotNil(t, gotCfg)
+	//gotData, err := yaml.Marshal(gotCfg)
+	//require.NoError(t, err)
+
+	//for _, cfg := range gotCfg.PluginsExecutors {
+	//	fmt.Println(cfg.GetPlugin("botkube/echo").GetYAMLConfig())
+	//fmt.Println(cfg.GetAllEnabledPluginsNames())
+	//}
+
+	litter.Dump(gotCfg.Plugins)
+	//golden.Assert(t, string(gotData), filepath.Join(t.Name(), "config.golden.yaml"))
 }
 
 func TestFromEnvOrFlag(t *testing.T) {

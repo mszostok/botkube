@@ -11,6 +11,7 @@ import (
 	"github.com/google/go-github/v44/github"
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sanity-io/litter"
 	segment "github.com/segmentio/analytics-go"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/pflag"
@@ -29,6 +30,7 @@ import (
 
 	"github.com/kubeshop/botkube/internal/analytics"
 	"github.com/kubeshop/botkube/internal/lifecycle"
+	"github.com/kubeshop/botkube/internal/plugin"
 	"github.com/kubeshop/botkube/internal/storage"
 	"github.com/kubeshop/botkube/pkg/action"
 	"github.com/kubeshop/botkube/pkg/bot"
@@ -98,6 +100,16 @@ func run() error {
 
 	errGroup, ctx := errgroup.WithContext(ctx)
 
+	litter.Dump(conf.Plugins)
+	litter.Dump(conf.PluginsExecutors)
+	pluginManager := plugin.NewManager(logger, conf.Plugins, conf.PluginsExecutors)
+
+	err = pluginManager.Start(ctx)
+	if err != nil {
+		return fmt.Errorf("while starting plugins manager: %w", err)
+	}
+	defer pluginManager.Shutdown()
+
 	// Prepare K8s clients and mapper
 	kubeConfig, err := clientcmd.BuildConfigFromFlags("", conf.Settings.Kubeconfig)
 	if err != nil {
@@ -161,6 +173,7 @@ func run() error {
 			AnalyticsReporter: reporter,
 			NamespaceLister:   k8sCli.CoreV1().Namespaces(),
 			CommandGuard:      cmdGuard,
+			PluginManager:     pluginManager,
 		},
 	)
 

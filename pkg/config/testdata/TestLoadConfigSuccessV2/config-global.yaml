@@ -1,0 +1,18 @@
+# Setting to support multiple clusters
+settings:
+  # Cluster name to differentiate incoming messages
+  clusterName: not-configured
+  # Set true to enable config watcher
+  configWatcher: true
+  # Set false to disable upgrade notification
+  upgradeNotifier: true
+
+  persistentConfig:
+    startup:
+      configMap:
+        name: startup-config
+      fileName: "__startup_state.yaml"
+    runtime:
+      configMap:
+        name: runtime-config
+      fileName: "_runtime_state.yaml"

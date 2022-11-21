@@ -1,0 +1,428 @@
+actions:
+    show-created-resource:
+        enabled: true
+        displayName: Display created resource
+        command: kubectl describe {{.Event.ResourceType}} -n {{.Event.Namespace}} {{.Event.Name}}
+        bindings:
+            sources:
+                - k8s-events
+            executors:
+                - kubectl-read-only
+sources:
+    k8s-events:
+        displayName: ""
+        kubernetes:
+            recommendations:
+                ingress:
+                    backendServiceValid: true
+                    tlsSecretValid: false
+                pod:
+                    noLatestImageTag: false
+                    labelsSet: true
+            events:
+                - create
+                - delete
+                - error
+            resources:
+                - name: v1/pods
+                  namespaces:
+                    include: []
+                  events: []
+                  updateSetting:
+                    fields: []
+                    includeDiff: false
+                - name: v1/services
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - delete
+                    - error
+                  updateSetting:
+                    fields: []
+                    includeDiff: false
+                - name: apps/v1/deployments
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - update
+                    - delete
+                    - error
+                  updateSetting:
+                    fields:
+                        - spec.template.spec.containers[*].image
+                        - status.availableReplicas
+                    includeDiff: true
+                - name: apps/v1/statefulsets
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - update
+                    - delete
+                    - error
+                  updateSetting:
+                    fields:
+                        - spec.template.spec.containers[*].image
+                        - status.readyReplicas
+                    includeDiff: true
+                - name: networking.k8s.io/v1/ingresses
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - delete
+                    - error
+                  updateSetting:
+                    fields: []
+                    includeDiff: false
+                - name: v1/nodes
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - delete
+                    - error
+                  updateSetting:
+                    fields: []
+                    includeDiff: false
+                - name: v1/namespaces
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - delete
+                    - error
+                  updateSetting:
+                    fields: []
+                    includeDiff: false
+                - name: v1/persistentvolumes
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - delete
+                    - error
+                  updateSetting:
+                    fields: []
+                    includeDiff: false
+                - name: v1/persistentvolumeclaims
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - delete
+                    - error
+                  updateSetting:
+                    fields: []
+                    includeDiff: false
+                - name: v1/secrets
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - delete
+                    - error
+                  updateSetting:
+                    fields: []
+                    includeDiff: false
+                - name: v1/configmaps
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - delete
+                    - error
+                  updateSetting:
+                    fields: []
+                    includeDiff: false
+                - name: apps/v1/daemonsets
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - update
+                    - delete
+                    - error
+                  updateSetting:
+                    fields:
+                        - spec.template.spec.containers[*].image
+                        - status.numberReady
+                    includeDiff: true
+                - name: batch/v1/jobs
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - update
+                    - delete
+                    - error
+                  updateSetting:
+                    fields:
+                        - spec.template.spec.containers[*].image
+                        - status.conditions[*].type
+                    includeDiff: true
+                - name: rbac.authorization.k8s.io/v1/roles
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - delete
+                    - error
+                  updateSetting:
+                    fields: []
+                    includeDiff: false
+                - name: rbac.authorization.k8s.io/v1/rolebindings
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - delete
+                    - error
+                  updateSetting:
+                    fields: []
+                    includeDiff: false
+                - name: rbac.authorization.k8s.io/v1/clusterrolebindings
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - delete
+                    - error
+                  updateSetting:
+                    fields: []
+                    includeDiff: false
+                - name: rbac.authorization.k8s.io/v1/clusterroles
+                  namespaces:
+                    include:
+                        - .*
+                    exclude:
+                        - ""
+                  events:
+                    - create
+                    - delete
+                    - error
+                  updateSetting:
+                    fields: []
+                    includeDiff: false
+            namespaces:
+                include:
+                    - .*
+executors:
+    kubectl-read-only:
+        kubectl:
+            namespaces:
+                include:
+                    - .*
+                exclude:
+                    - foo
+                    - bar
+                    - test-*-ns
+            enabled: false
+            commands:
+                verbs:
+                    - api-resources
+                    - api-versions
+                    - cluster-info
+                    - describe
+                    - diff
+                    - explain
+                    - get
+                    - logs
+                    - top
+                    - auth
+                resources:
+                    - deployments
+                    - pods
+                    - namespaces
+                    - daemonsets
+                    - statefulsets
+                    - storageclasses
+                    - nodes
+            defaultNamespace: default
+            restrictAccess: false
+communications:
+    default-workspace:
+        slack:
+            enabled: true
+            channels:
+                alias:
+                    name: SLACK_CHANNEL
+                    notification:
+                        disabled: true
+                    bindings:
+                        sources:
+                            - k8s-events
+                        executors:
+                            - kubectl-read-only
+            notification:
+                type: short
+            token: xoxb-token-from-env
+        socketSlack:
+            enabled: true
+            channels:
+                alias:
+                    name: SLACK_CHANNEL
+                    notification:
+                        disabled: false
+                    bindings:
+                        sources:
+                            - k8s-events
+                        executors:
+                            - kubectl-read-only
+            notification:
+                type: short
+            botToken: xoxb-token-from-env
+            appToken: xapp-token-from-env
+        mattermost:
+            enabled: false
+            botName: ""
+            url: MATTERMOST_SERVER_URL
+            token: MATTERMOST_TOKEN
+            team: MATTERMOST_TEAM
+            channels:
+                alias:
+                    name: MATTERMOST_CHANNEL
+                    notification:
+                        disabled: true
+                    bindings:
+                        sources:
+                            - k8s-events
+                        executors:
+                            - kubectl-read-only
+            notification:
+                type: short
+        discord:
+            enabled: false
+            token: DISCORD_TOKEN
+            botID: DISCORD_BOT_ID
+            channels:
+                alias:
+                    id: DISCORD_CHANNEL_ID
+                    notification:
+                        disabled: false
+                    bindings:
+                        sources:
+                            - k8s-events
+                        executors:
+                            - kubectl-read-only
+            notification:
+                type: short
+        teams:
+            enabled: false
+            appID: APPLICATION_ID
+            appPassword: APPLICATION_PASSWORD
+            port: "3978"
+            bindings:
+                sources:
+                    - k8s-events
+                executors:
+                    - kubectl-read-only
+            notification:
+                type: short
+        webhook:
+            enabled: false
+            url: WEBHOOK_URL
+            bindings:
+                sources:
+                    - k8s-events
+        elasticsearch:
+            enabled: false
+            username: ELASTICSEARCH_USERNAME
+            password: ELASTICSEARCH_PASSWORD
+            server: ELASTICSEARCH_ADDRESS
+            skipTLSVerify: false
+            awsSigning:
+                enabled: false
+                awsRegion: us-east-1
+                roleArn: ""
+            indices:
+                alias:
+                    name: botkube
+                    type: botkube-event
+                    shards: 1
+                    replicas: 0
+                    bindings:
+                        sources:
+                            - k8s-events
+filters:
+    kubernetes:
+        objectAnnotationChecker: false
+        nodeEventsChecker: true
+analytics:
+    disable: true
+settings:
+    clusterName: cluster-name-from-env
+    upgradeNotifier: true
+    systemConfigMap:
+        name: botkube-system
+        namespace: botkube
+    persistentConfig:
+        startup:
+            fileName: __startup_state.yaml
+            configMap:
+                name: startup-config
+        runtime:
+            fileName: _runtime_state.yaml
+            configMap:
+                name: runtime-config
+    metricsPort: "1313"
+    lifecycleServer:
+        enabled: false
+        port: 0
+        deployment: {}
+    log:
+        level: error
+        disableColors: false
+    informersResyncPeriod: 30m0s
+    kubeconfig: kubeconfig-from-env
+configWatcher:
+    enabled: false
+    initialSyncTimeout: 0s
+    tmpDir: ""

@@ -28,6 +28,11 @@ build: pre-build
 	@cd cmd/botkube;GOOS_VAL=$(shell go env GOOS) CGO_ENABLED=0 GOARCH_VAL=$(shell go env GOARCH) go build -o $(shell go env GOPATH)/bin/botkube
 	@echo "Build completed successfully"
 
+build-plugins: pre-build
+	@echo "Building plugins binaries"
+	@./hack/goreleaser.sh build_plugins
+	@echo "Build completed successfully"
+
 # Build the image
 container-image: pre-build
 	@echo "Building docker image"

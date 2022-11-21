@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/slack-go/slack"
 
+	"github.com/kubeshop/botkube/internal/plugin"
 	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/execute/command"
@@ -22,6 +23,7 @@ type DefaultExecutorFactory struct {
 	analyticsReporter AnalyticsReporter
 	notifierExecutor  *NotifierExecutor
 	kubectlExecutor   *Kubectl
+	pluginExecutor    *PluginExecutor
 	editExecutor      *EditExecutor
 	merger            *kubectl.Merger
 	cfgManager        ConfigPersistenceManager
@@ -40,6 +42,7 @@ type DefaultExecutorFactoryParams struct {
 	AnalyticsReporter AnalyticsReporter
 	NamespaceLister   NamespaceLister
 	CommandGuard      CommandGuard
+	PluginManager     *plugin.Manager
 }
 
 // Executor is an interface for processes to execute commands
@@ -101,6 +104,11 @@ func NewExecutorFactory(params DefaultExecutorFactoryParams) *DefaultExecutorFac
 			params.CfgManager,
 			params.Cfg,
 		),
+		pluginExecutor: NewPluginExecutor(
+			params.Log.WithField("component", "Botkube Plugin Executor"),
+			params.Cfg,
+			params.PluginManager,
+		),
 		merger:          params.Merger,
 		cfgManager:      params.CfgManager,
 		kubectlExecutor: kcExecutor,
@@ -135,6 +143,7 @@ func (f *DefaultExecutorFactory) NewDefault(cfg NewDefaultInput) Executor {
 		cfg:               f.cfg,
 		analyticsReporter: f.analyticsReporter,
 		kubectlExecutor:   f.kubectlExecutor,
+		pluginExecutor:    f.pluginExecutor,
 		notifierExecutor:  f.notifierExecutor,
 		editExecutor:      f.editExecutor,
 		filterEngine:      f.filterEngine,
