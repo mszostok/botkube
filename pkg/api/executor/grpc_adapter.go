@@ -13,7 +13,7 @@ type Executor interface {
 	Execute(ctx context.Context, req *ExecuteRequest) (*ExecuteResponse, error)
 }
 
-// The ProtocolVersion is the version that must match between Botkube core
+// ProtocolVersion is the version that must match between Botkube core
 // and Botkube plugins. This should be bumped whenever a change happens in
 // one or the other that makes it so that they can't safely communicate.
 // This could be adding a new interface value, it could be how helper/schema computes diffs, etc.

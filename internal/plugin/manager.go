@@ -162,6 +162,7 @@ func (m *Manager) Shutdown() {
 func (m *Manager) loadRepositoriesMetadata(ctx context.Context) error {
 	for name, url := range m.cfg.Repositories {
 		path := filepath.Join(m.cfg.CacheDir, fmt.Sprintf("%s.yaml", name))
+		path = filepath.Clean(path)
 		if _, err := os.Stat(path); os.IsNotExist(err) {
 			err := m.fetchIndex(ctx, path, url)
 			if err != nil {

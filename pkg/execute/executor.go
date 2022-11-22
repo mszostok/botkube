@@ -187,7 +187,7 @@ func (e *DefaultExecutor) Execute(ctx context.Context) interactive.Message {
 		return out
 	}
 
-	isPluginCmd, err := e.pluginExecutor.CanHandle(e.conversation.ExecutorBindings, args)
+	isPluginCmd := e.pluginExecutor.CanHandle(e.conversation.ExecutorBindings, args)
 	if err != nil {
 		// TODO: Return error when the DefaultExecutor is refactored as a part of https://github.com/kubeshop/botkube/issues/589
 		e.log.Errorf("while checking if it's a plugin command: %s", err.Error())

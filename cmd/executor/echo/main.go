@@ -10,8 +10,10 @@ import (
 
 const pluginName = "echo"
 
+// EchoExecutor implements Botkube executor plugin
 type EchoExecutor struct{}
 
+// Execute returns a given command as response.
 func (EchoExecutor) Execute(_ context.Context, req *executor.ExecuteRequest) (*executor.ExecuteResponse, error) {
 	return &executor.ExecuteResponse{Data: req.Command}, nil
 }

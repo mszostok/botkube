@@ -30,19 +30,15 @@ func NewPluginExecutor(log logrus.FieldLogger, cfg config.Config, manager *plugi
 }
 
 // CanHandle returns true if it's a known plugin executor.
-func (e *PluginExecutor) CanHandle(bindings []string, args []string) (bool, error) {
+func (e *PluginExecutor) CanHandle(bindings []string, args []string) bool {
 	if len(args) == 0 {
-		return false, nil
+		return false
 	}
 
 	cmdName := args[0]
+	plugins, _ := e.getEnabledPlugins(bindings, cmdName)
 
-	plugins, _, err := e.getEnabledPlugins(bindings, cmdName)
-	if err != nil {
-		return false, err
-	}
-
-	return len(plugins) > 0, nil
+	return len(plugins) > 0
 }
 
 // GetCommandPrefix gets verb command with k8s alias prefix.
@@ -65,10 +61,7 @@ func (e *PluginExecutor) Execute(ctx context.Context, bindings []string, args []
 		cmdName = args[0]
 	)
 
-	plugins, fullPluginName, err := e.getEnabledPlugins(bindings, cmdName)
-	if err != nil {
-		return "", fmt.Errorf("while collecting enabled plugins: %w", err)
-	}
+	plugins, fullPluginName := e.getEnabledPlugins(bindings, cmdName)
 
 	configs, err := e.collectConfigs(plugins)
 	if err != nil {
@@ -80,7 +73,7 @@ func (e *PluginExecutor) Execute(ctx context.Context, bindings []string, args []
 		return "", fmt.Errorf("while getting concrete plugin client: %w", err)
 	}
 
-	// Execute RPC with all data:
+	// TODO: Execute RPC with all data:
 	//  - command
 	//  - all configuration but in proper order (so it can be merged properly)
 	_ = configs
@@ -111,7 +104,7 @@ func (e *PluginExecutor) collectConfigs(plugins []config.PluginExecutor) ([]stri
 	return configs, nil
 }
 
-func (e *PluginExecutor) getEnabledPlugins(bindings []string, cmdName string) ([]config.PluginExecutor, string, error) {
+func (e *PluginExecutor) getEnabledPlugins(bindings []string, cmdName string) ([]config.PluginExecutor, string) {
 	var (
 		out            []config.PluginExecutor
 		fullPluginName string
@@ -138,5 +131,5 @@ func (e *PluginExecutor) getEnabledPlugins(bindings []string, cmdName string) ([
 		}
 	}
 
-	return out, fullPluginName, nil
+	return out, fullPluginName
 }
