@@ -5,10 +5,9 @@ import (
 	"io"
 	"log"
 
-	"google.golang.org/protobuf/types/known/emptypb"
-
 	"github.com/hashicorp/go-plugin"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/kubeshop/botkube/pkg/api"
 )

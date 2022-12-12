@@ -111,8 +111,11 @@ func (*IndexBuilder) getPluginMetadata(dir string, bins []pluginBinariesIndex) (
 		if err != nil {
 			return "", "", fmt.Errorf("while calling metadata RPC: %w", err)
 		}
-
 		cli.Cleanup()
+
+		if err := meta.Validate(); err != nil {
+			return "", "", fmt.Errorf("while validating metadata fields: %w", err)
+		}
 
 		return meta.Version, meta.Description, nil
 	}
