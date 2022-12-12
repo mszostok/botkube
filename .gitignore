@@ -40,3 +40,5 @@ tags
 ./botkube-test
 
 dist/
+plugin-dist/
+plugins-index.yaml

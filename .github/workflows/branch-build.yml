@@ -113,6 +113,9 @@ jobs:
           version: latest
 
       - name: Build all plugins into dist directory
+        env:
+          # we hardcode plugins version, so it's predictable in e2e tests
+          GORELEASER_CURRENT_TAG: "v1.0.0-devel"
         run: |
           make build-plugins
 
