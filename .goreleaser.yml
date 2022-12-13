@@ -46,7 +46,7 @@ release:
     - glob: ./plugins-index.yaml
 
 changelog:
-  skip: true
+  skip: false
 
 dockers:
   - image_templates:
