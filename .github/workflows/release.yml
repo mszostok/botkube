@@ -73,10 +73,10 @@ jobs:
             -f target_commitish="${{ steps.prev-version.outputs.previous-version }}" \
             -q .body > CHANGELOG.md
 
-      - name: Run GoReleaser
+      - name: Publish draft release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
           IMAGE_TAG: ${{ github.ref_name }}
           ANALYTICS_API_KEY: ${{ secrets.ANALYTICS_API_KEY }}
         run: |
-          goreleaser: release --rm-dist --release-notes=CHANGELOG.md
+          goreleaser release --rm-dist --release-notes=CHANGELOG.md
