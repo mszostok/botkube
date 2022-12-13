@@ -61,6 +61,7 @@ func main() {
 }
 
 // run wraps the main logic of the app to be able to properly clean up resources via deferred calls.
+// some example change
 func run() error {
 	// Load configuration
 	config.RegisterFlags(pflag.CommandLine)
