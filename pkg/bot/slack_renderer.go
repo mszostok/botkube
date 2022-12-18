@@ -138,7 +138,7 @@ func (b *SlackRenderer) RenderAsSlackBlocks(msg interactive.Message) []slack.Blo
 	return blocks
 }
 
-func (b *SlackRenderer) renderSelects(s interactive.Selects) slack.Block {
+func (b *SlackRenderer) renderSelects(s interactive.Selects) []slack.BlockElement {
 	var elems []slack.BlockElement
 	for _, s := range s.Items {
 		placeholder := slack.NewTextBlockObject(slack.PlainTextType, s.Name, false, false)
@@ -166,12 +166,13 @@ func (b *SlackRenderer) renderSelects(s interactive.Selects) slack.Block {
 		elems = append(elems, singleSelect)
 	}
 
+	return elems
 	// We use actions as we have only select items that we want to display in a single line.
 	// https://api.slack.com/reference/block-kit/blocks#actions
-	return slack.NewActionBlock(
-		s.ID,
-		elems...,
-	)
+	//return slack.NewActionBlock(
+	//	s.ID,
+	//	elems...,
+	//)
 }
 
 func (b *SlackRenderer) renderAsSimpleTextSection(msg interactive.Message) slack.MsgOption {
@@ -222,14 +223,10 @@ func (b *SlackRenderer) renderSection(in interactive.Section) []slack.Block {
 		out = append(out, b.renderInput(item))
 	}
 
-	out = append(out, b.renderButtons(in.Buttons)...)
+	out = append(out, b.renderButtons(in.Buttons, in.Selects)...)
 	if in.MultiSelect.AreOptionsDefined() {
 		sec := b.renderMultiselectWithDescription(in.MultiSelect)
 		out = append(out, sec)
-	}
-
-	if in.Selects.AreOptionsDefined() {
-		out = append(out, b.renderSelects(in.Selects))
 	}
 
 	if len(in.Context) > 0 {
@@ -283,22 +280,35 @@ func (b *SlackRenderer) renderContext(in []interactive.ContextItem) []slack.Bloc
 //
 //  2. Without description: all in the same row. For example:
 //     [Button "Get Pods"] [Button "Get Deployments"]
-func (b *SlackRenderer) renderButtons(in interactive.Buttons) []slack.Block {
+func (b *SlackRenderer) renderButtons(in interactive.Buttons, selects interactive.Selects) []slack.Block {
 	if len(in) == 0 {
+		if selects.AreOptionsDefined() {
+			return []slack.Block{
+				slack.NewActionBlock(
+					selects.ID,
+					b.renderSelects(selects)...,
+				),
+			}
+		}
 		return nil
 	}
 
 	if in.AtLeastOneButtonHasDescription() {
 		// We use section layout as we also want to add text description
 		// https://api.slack.com/reference/block-kit/blocks#section
-		return b.renderButtonsWithDescription(in)
+		out := b.renderButtonsWithDescription(in)
+		out = append(out, slack.NewActionBlock(
+			selects.ID,
+			b.renderSelects(selects)...,
+		))
+		return out
 	}
 
 	var btns []slack.BlockElement
 	for _, btn := range in {
 		btns = append(btns, b.renderButton(btn))
 	}
-
+	btns = append(btns, b.renderSelects(selects)...)
 	return []slack.Block{
 		// We use actions layout as we have only buttons that we want to display in a single line.
 		// https://api.slack.com/reference/block-kit/blocks#actions

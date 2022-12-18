@@ -1,0 +1,16 @@
+interactivity:
+  - command:
+      prefix: "helm list" # matches `helm list -A` too :)
+      parser: "table"
+
+    message:
+      dropdowns:
+        release: "{{ .Namespace }}/{{ .Name }}"
+      actions:
+        delete: "helm delete {{ .Name }} -n {{ .Namespace }}"
+        notes: "helm get notes {{ .Name }} -n {{ .Namespace }}"
+
+      preview: |
+        NAME:     {{ .Name }}
+        REVISION: {{ .Revision }}
+        STATUS:   {{ .Status }}

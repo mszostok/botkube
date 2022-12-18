@@ -2,6 +2,7 @@ package execute
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -252,6 +253,13 @@ func (e *DefaultExecutor) Execute(ctx context.Context) interactive.Message {
 			e.log.Errorf("while executing plugin: %s", err.Error())
 			return empty
 		}
+
+		var msg interactive.Message
+		err = json.Unmarshal([]byte(out), &msg)
+		if err == nil {
+			return msg
+		}
+
 		return respond(execFilter.Apply(out), cmdCtx)
 	}
 

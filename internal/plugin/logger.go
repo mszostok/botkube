@@ -22,11 +22,13 @@ var specialCharsPattern = regexp.MustCompile(`(?i:[^A-Z0-9_])`)
 // - hashicorp client logger always has the configured log level
 // - binary standard output is logged only if debug level is set, otherwise it is discarded
 // - binary standard error is logged always on error level
-func NewPluginLoggers(parentLogger logrus.FieldLogger, pluginKey string, pluginType Type) (hclog.Logger, io.Writer, io.Writer) {
-	pluginLogLevel := getPluginLogLevel(parentLogger, pluginKey, pluginType)
+func NewPluginLoggers(bkLogger logrus.FieldLogger, pluginKey string, pluginType Type) (hclog.Logger, io.Writer, io.Writer) {
+	pluginLogLevel := getPluginLogLevel(bkLogger, pluginKey, pluginType)
 
-	log := parentLogger.WithField("plugin", pluginKey)
-	log.Level = pluginLogLevel
+	cfg := loggerx.Config{
+		Level: pluginLogLevel.String(),
+	}
+	log := loggerx.New(cfg).WithField("plugin", pluginKey)
 
 	var (
 		pluginLogger = loggerx.AsHCLog(log, pluginKey)
@@ -50,7 +52,7 @@ func getPluginLogLevel(logger logrus.FieldLogger, pluginKey string, pluginType T
 	logLevel := os.Getenv(envName)
 
 	if logLevel == "" {
-		logger.Info("Explicitly using Info level as custom log level was not set by %q environment variable", envName)
+		logger.Infof("Explicitly using Info level as custom log level was not set by %q environment variable", envName)
 		return logrus.InfoLevel
 	}
 

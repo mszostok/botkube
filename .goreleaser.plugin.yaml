@@ -32,20 +32,26 @@ builds:
     goos: *goos
     goarch: *goarch
     goarm: *goarm
+
   - id: install
     binary: executor_install_{{ .Os }}_{{ .Arch }}
-    no_unique_dist_dir: true
     main: cmd/executor/install/main.go
-    env:
-      - CGO_ENABLED=0
-    goos:
-      - linux
-      - darwin
-    goarch:
-      - amd64
-      - arm64
-    goarm:
-      - 7
+
+    no_unique_dist_dir: true
+    env: *env
+    goos: *goos
+    goarch: *goarch
+    goarm: *goarm
+
+  - id: exec
+    binary: executor_exec_{{ .Os }}_{{ .Arch }}
+    main: cmd/executor/exec/main.go
+
+    no_unique_dist_dir: true
+    env: *env
+    goos: *goos
+    goarch: *goarch
+    goarm: *goarm
 
 snapshot:
   name_template: 'v{{ .Version }}'
