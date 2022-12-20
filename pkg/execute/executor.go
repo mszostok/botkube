@@ -257,6 +257,17 @@ func (e *DefaultExecutor) Execute(ctx context.Context) interactive.Message {
 		var msg interactive.Message
 		err = json.Unmarshal([]byte(out), &msg)
 		if err == nil {
+			for idx := range msg.Sections {
+				for sidx := range msg.Sections[idx].Selects.Items {
+					msg.Sections[idx].Selects.Items[sidx].Command = botName + msg.Sections[idx].Selects.Items[sidx].Command
+				}
+
+				for bidx := range msg.Sections[idx].Buttons {
+					msg.Sections[idx].Buttons[bidx].Command = botName + msg.Sections[idx].Buttons[bidx].Command
+				}
+
+			}
+
 			return msg
 		}
 

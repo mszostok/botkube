@@ -1,7 +1,9 @@
 interactivity:
   - command:
       prefix: "helm list" # matches `helm list -A` too :)
-      parser: "table"
+      # flags: ..
+
+      parser: "table" # YAML | JSON
 
     message:
       dropdowns:
@@ -11,6 +13,6 @@ interactivity:
         notes: "helm get notes {{ .Name }} -n {{ .Namespace }}"
 
       preview: |
-        NAME:     {{ .Name }}
-        REVISION: {{ .Revision }}
+        Name:     {{ .Name }}
+        Namespace: {{ .Revision }}
         STATUS:   {{ .Status }}

@@ -8,20 +8,23 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/gookit/color"
 	"github.com/hashicorp/go-plugin"
 	"github.com/mattn/go-shellwords"
 
 	"github.com/kubeshop/botkube/cmd/executor/exec/internal"
+	"github.com/kubeshop/botkube/cmd/executor/exec/internal/output"
 	"github.com/kubeshop/botkube/pkg/api"
 	"github.com/kubeshop/botkube/pkg/api/executor"
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/format"
 )
 
 // version is set via ldflags by GoReleaser.
 var version = "dev"
 
-const pluginName = "exec"
+const (
+	pluginName = "exec"
+)
 
 // InstallExecutor implements Botkube executor plugin.
 type InstallExecutor struct{}
@@ -50,6 +53,11 @@ func removeHyperLinks(in string) string {
 
 // Execute returns a given command as response.
 func (InstallExecutor) Execute(_ context.Context, in executor.ExecuteInput) (executor.ExecuteOutput, error) {
+	cfg, err := internal.NewConfig(in.Configs)
+	if err != nil {
+		return executor.ExecuteOutput{}, err
+	}
+
 	tool := removeHyperLinks(in.Command)
 
 	tool = format.RemoveHyperlinks(in.Command)
@@ -58,20 +66,37 @@ func (InstallExecutor) Execute(_ context.Context, in executor.ExecuteInput) (exe
 	tool = strings.ReplaceAll(tool, "exec", "")
 	tool = strings.TrimSpace(tool)
 
+	var noProcessing bool
+	if strings.Contains(tool, output.NoProcessing) {
+		tool = strings.ReplaceAll(tool, output.NoProcessing, "")
+		noProcessing = true
+	}
+
 	out, err := runCmd(tool)
 	if err != nil {
 		return executor.ExecuteOutput{
 			Data: fmt.Sprintf("%s\n%s", out, err.Error()),
 		}, nil
 	}
+	out = color.ClearCode(out)
 
-	if !strings.HasPrefix(tool, "helm list") {
+	if noProcessing {
+		return executor.ExecuteOutput{
+			Data: out,
+		}, nil
+	}
+	msg, found := cfg.For(tool)
+	if !found {
 		return executor.ExecuteOutput{
 			Data: out,
 		}, nil
 	}
 
-	raw, err := json.Marshal(BuildMessage(out))
+	interactiveMsg, err := output.BuildMessage(tool, out, msg)
+	if err != nil {
+		return executor.ExecuteOutput{}, err
+	}
+	raw, err := json.Marshal(interactiveMsg)
 	if err != nil {
 		return executor.ExecuteOutput{}, err
 	}
@@ -97,112 +122,4 @@ func runCmd(in string) (string, error) {
 	cmd := exec.Command(fmt.Sprintf("/tmp/bin/%s", args[0]), args[1:]...)
 	out, err := cmd.CombinedOutput()
 	return string(out), err
-}
-
-type ExecIndex struct {
-	Interactivity []Interactivity `yaml:"interactivity"`
-}
-type Command struct {
-	Prefix string `yaml:"prefix"`
-}
-type Table struct {
-	Separator string `yaml:"separator"`
-}
-type Parser struct {
-	Table Table `yaml:"table"`
-}
-type Dropdowns struct {
-	Release string `yaml:"release"`
-}
-type Output struct {
-	Parser    Parser    `yaml:"parser"`
-	Dropdowns Dropdowns `yaml:"dropdowns"`
-}
-type Actions struct {
-	Delete string `yaml:"delete"`
-	Notes  string `yaml:"notes"`
-}
-type Interactivity struct {
-	Command Command `yaml:"command"`
-	Output  Output  `yaml:"output"`
-	Actions Actions `yaml:"actions"`
-}
-
-// Missing bot name + cluster name..
-func BuildMessage(in string) interactive.Message {
-	table, lines := internal.ParseTable(in)
-
-	var opts []interactive.OptionItem
-	for _, row := range table[1:] {
-		opts = append(opts, interactive.OptionItem{
-			Name:  fmt.Sprintf("%s/%s", row[1], row[0]),
-			Value: fmt.Sprintf("%s -n %s", row[0], row[1]),
-		})
-	}
-
-	btnBuilder := interactive.ButtonBuilder{BotName: "<name>"}
-	return interactive.Message{
-		Base: interactive.Base{ // TODO: by Botkube core...
-			Description: "`exec helm list` on `labs`",
-		},
-		Sections: []interactive.Section{
-			{
-				Selects: interactive.Selects{
-					ID: "123",
-					Items: []interactive.Select{
-						{
-							Type:          interactive.StaticSelect,
-							Name:          "release",
-							Command:       fmt.Sprintf("%s helm list", "<bot>"),
-							InitialOption: &opts[0],
-							OptionGroups: []interactive.OptionGroup{
-								{
-									Name:    "release",
-									Options: opts,
-								},
-							},
-						},
-					},
-				},
-			},
-			{
-				Base: interactive.Base{
-					Body: interactive.Body{
-						CodeBlock: fmt.Sprintf("%s\n%s", lines[0], lines[1]), // just print the first entry
-					},
-				},
-			},
-			{
-				Buttons: []interactive.Button{
-					btnBuilder.ForCommandWithoutDesc("Raw output", "exec helm list --no-interactivity"),
-				},
-				Selects: interactive.Selects{
-					ID: "1243",
-					Items: []interactive.Select{
-						{
-							Type:    interactive.StaticSelect,
-							Name:    "release",
-							Command: fmt.Sprintf("%s exec helm", "<bot>"),
-							OptionGroups: []interactive.OptionGroup{
-								{
-									Name: "Actions",
-									Options: []interactive.OptionItem{
-										{
-											Name:  "delete",
-											Value: fmt.Sprintf("delete %s -n %s", table[1][0], table[1][1]),
-										},
-										{
-											Name:  "notes",
-											Value: fmt.Sprintf("get notes %s -n %s", table[1][0], table[1][1]),
-										},
-									},
-								},
-							},
-							//InitialOption: nil,
-						},
-					},
-				},
-			},
-		},
-	}
 }

@@ -35,7 +35,6 @@ import (
 	"github.com/kubeshop/botkube/internal/storage"
 	"github.com/kubeshop/botkube/pkg/action"
 	"github.com/kubeshop/botkube/pkg/bot"
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/controller"
 	"github.com/kubeshop/botkube/pkg/execute"
@@ -437,27 +436,28 @@ func reportFatalErrFn(logger logrus.FieldLogger, reporter analytics.Reporter) fu
 
 // sendHelp sends the help message to all interactive bots.
 func sendHelp(ctx context.Context, s *storage.Help, clusterName string, notifiers map[string]bot.Bot) error {
-	alreadySentHelp, err := s.GetSentHelpDetails(ctx)
-	if err != nil {
-		return fmt.Errorf("while getting the help data: %w", err)
-	}
-
-	var sent []string
-
-	for key, notifier := range notifiers {
-		if alreadySentHelp[key] {
-			continue
-		}
-
-		help := interactive.NewHelpMessage(notifier.IntegrationName(), clusterName, notifier.BotName()).Build()
-		err := notifier.SendMessageToAll(ctx, help)
-		if err != nil {
-			return fmt.Errorf("while sending help message for %s: %w", notifier.IntegrationName(), err)
-		}
-		sent = append(sent, key)
-	}
-
-	return s.MarkHelpAsSent(ctx, sent)
+	//alreadySentHelp, err := s.GetSentHelpDetails(ctx)
+	//if err != nil {
+	//	return fmt.Errorf("while getting the help data: %w", err)
+	//}
+	//
+	//var sent []string
+	//
+	//for key, notifier := range notifiers {
+	//	if alreadySentHelp[key] {
+	//		continue
+	//	}
+	//
+	//	help := interactive.NewHelpMessage(notifier.IntegrationName(), clusterName, notifier.BotName()).Build()
+	//	err := notifier.SendMessageToAll(ctx, help)
+	//	if err != nil {
+	//		return fmt.Errorf("while sending help message for %s: %w", notifier.IntegrationName(), err)
+	//	}
+	//	sent = append(sent, key)
+	//}
+	//
+	//return s.MarkHelpAsSent(ctx, sent)
+	return nil
 }
 
 func findK8sVersion(runner *execute.OSCommand) (string, error) {

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"runtime"
 	"strings"
 
 	"github.com/hashicorp/go-plugin"
@@ -82,7 +83,7 @@ func install(tool string) {
 			return
 		}
 
-		out, err := runCmd("wget -O /tmp/bin/eget https://github.com/mszostok/botkube/releases/download/v0.66.0/eget")
+		out, err := runCmd(fmt.Sprintf("wget -O /tmp/bin/eget https://github.com/mszostok/botkube/releases/download/v0.66.0/eget-%s", runtime.GOOS))
 		if err != nil {
 			log.Println("while downloading it", out, err)
 			return
