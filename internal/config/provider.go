@@ -2,7 +2,9 @@ package config
 
 import "context"
 
-// Provider provider for configuration sources
+type YAMLFiles [][]byte
+
+// Provider provides loaded configuration files in YAML format.
 type Provider interface {
-	Configs(ctx context.Context) ([]string, error)
+	Configs(ctx context.Context) (YAMLFiles, error)
 }
