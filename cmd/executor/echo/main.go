@@ -71,10 +71,8 @@ func (EchoExecutor) Execute(_ context.Context, in executor.ExecuteInput) (execut
 	}, nil
 }
 
-func (EchoExecutor) Help() executor.HelpResponse {
-	return executor.HelpResponse{
-		Help: "echo help help",
-	}
+func (EchoExecutor) Help(_ context.Context) (string, error) {
+	return "echo help", nil
 }
 
 func main() {

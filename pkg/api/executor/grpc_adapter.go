@@ -14,7 +14,7 @@ import (
 type Executor interface {
 	Execute(context.Context, ExecuteInput) (ExecuteOutput, error)
 	Metadata(ctx context.Context) (api.MetadataOutput, error)
-	Help() HelpResponse
+	Help(context.Context) (string, error)
 }
 
 type (
@@ -101,6 +101,14 @@ func (p *grpcClient) Metadata(ctx context.Context) (api.MetadataOutput, error) {
 	}, nil
 }
 
+func (p *grpcClient) Help(ctx context.Context) (string, error) {
+	resp, err := p.client.Help(ctx, &emptypb.Empty{})
+	if err != nil {
+		return "", err
+	}
+	return resp.Help, nil
+}
+
 type grpcServer struct {
 	UnimplementedExecutorServer
 	Impl Executor
@@ -131,6 +139,15 @@ func (p *grpcServer) Metadata(ctx context.Context, _ *emptypb.Empty) (*MetadataR
 			Value:  out.JSONSchema.Value,
 			RefURL: out.JSONSchema.RefURL,
 		},
+	}, nil
+}
+func (p *grpcServer) Help(ctx context.Context, _ *emptypb.Empty) (*HelpResponse, error) {
+	resp, err := p.Impl.Help(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &HelpResponse{
+		Help: resp,
 	}, nil
 }
 

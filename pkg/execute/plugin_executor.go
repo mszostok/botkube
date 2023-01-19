@@ -70,8 +70,9 @@ func (e *PluginExecutor) Execute(ctx context.Context, bindings []string, args []
 		return "", fmt.Errorf("while getting concrete plugin client: %w", err)
 	}
 
+	fmt.Println(args)
 	if isHelpCmd(args) {
-		return cli.Help().Help, nil
+		return cli.Help(context.Background())
 	}
 
 	resp, err := cli.Execute(ctx, executor.ExecuteInput{
