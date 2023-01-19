@@ -29,6 +29,8 @@ type Config struct {
 // EchoExecutor implements Botkube executor plugin.
 type EchoExecutor struct{}
 
+var _ executor.Executor = &EchoExecutor{}
+
 // Metadata returns details about Echo plugin.
 func (EchoExecutor) Metadata(context.Context) (api.MetadataOutput, error) {
 	return api.MetadataOutput{
@@ -67,6 +69,12 @@ func (EchoExecutor) Execute(_ context.Context, in executor.ExecuteInput) (execut
 	return executor.ExecuteOutput{
 		Data: data,
 	}, nil
+}
+
+func (EchoExecutor) Help() executor.HelpResponse {
+	return executor.HelpResponse{
+		Help: "echo help help",
+	}
 }
 
 func main() {

@@ -131,6 +131,12 @@ func (e *Executor) Execute(ctx context.Context, in executor.ExecuteInput) (execu
 	}
 }
 
+func (Executor) Help() executor.HelpResponse {
+	return executor.HelpResponse{
+		Help: (&HelpCommand{}).Help(),
+	}
+}
+
 // handleHelmList construct a Helm CLI command and run it.
 func (e *Executor) handleHelmCommand(ctx context.Context, cmd command, cfg Config, wasHelpRequested bool, args []string) (executor.ExecuteOutput, error) {
 	if wasHelpRequested {

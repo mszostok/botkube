@@ -33,7 +33,12 @@ message JSONSchema {
 	string refURL = 2;
 }
 
+message HelpResponse {
+	string help = 1;
+}
+
 service Executor {
 	rpc Execute(ExecuteRequest) returns (ExecuteResponse) {}
 	rpc Metadata(google.protobuf.Empty) returns (MetadataResponse) {}
+	rpc Help(google.protobuf.Empty) returns (HelpResponse) {}
 }
