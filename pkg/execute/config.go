@@ -3,11 +3,11 @@ package execute
 import (
 	"context"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/execute/command"
 )
@@ -50,13 +50,13 @@ func (e *ConfigExecutor) Commands() map[command.Verb]CommandFn {
 }
 
 // Show returns Config in yaml format
-func (e *ConfigExecutor) Show(_ context.Context, cmdCtx CommandContext) (interactive.Message, error) {
+func (e *ConfigExecutor) Show(_ context.Context, cmdCtx CommandContext) (api.Message, error) {
 	cmdVerb, cmdRes := parseCmdVerb(cmdCtx.Args)
 	defer e.reportCommand(cmdVerb, cmdRes, cmdCtx.Conversation.CommandOrigin, cmdCtx.Platform)
 
 	cfg, err := e.renderBotkubeConfiguration()
 	if err != nil {
-		return interactive.Message{}, fmt.Errorf("while rendering Botkube configuration: %w", err)
+		return api.Message{}, fmt.Errorf("while rendering Botkube configuration: %w", err)
 	}
 	return respond(cfg, cmdCtx), nil
 }

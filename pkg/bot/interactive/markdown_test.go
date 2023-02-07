@@ -2,6 +2,7 @@ package interactive
 
 import (
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"testing"
 
 	"gotest.tools/v3/golden"
@@ -12,20 +13,20 @@ import (
 // go test -run=TestInteractiveMessageToMarkdownMultiSelect ./pkg/bot/interactive/... -test.update-golden
 func TestInteractiveMessageToMarkdownMultiSelect(t *testing.T) {
 	// given
-	message := Message{
-		Base: Base{
+	message := api.Message{
+		Base: api.Base{
 			Header: "Adjust notifications",
 		},
 
-		Sections: []Section{
+		Sections: []api.Section{
 			{
-				MultiSelect: MultiSelect{
+				MultiSelect: api.MultiSelect{
 					Name: "Adjust notifications",
-					Description: Body{
+					Description: api.Body{
 						Plaintext: "Select notification sources",
 					},
 					Command: "@Botkube edit SourceBindings",
-					Options: []OptionItem{
+					Options: []api.OptionItem{
 						{
 							Name:  "K8s all events",
 							Value: "k8s-all-events",
@@ -38,15 +39,15 @@ func TestInteractiveMessageToMarkdownMultiSelect(t *testing.T) {
 				},
 			},
 			{
-				Selects: Selects{
-					Items: []Select{
+				Selects: api.Selects{
+					Items: []api.Select{
 						{
 							Name:    "Commands",
 							Command: "@Botkube kcc",
-							OptionGroups: []OptionGroup{
+							OptionGroups: []api.OptionGroup{
 								{
 									Name: "Workloads",
-									Options: []OptionItem{
+									Options: []api.OptionItem{
 										{
 											Name:  "pods",
 											Value: "pods",
@@ -59,7 +60,7 @@ func TestInteractiveMessageToMarkdownMultiSelect(t *testing.T) {
 								},
 								{
 									Name: "Data",
-									Options: []OptionItem{
+									Options: []api.OptionItem{
 										{
 											Name:  "configmap",
 											Value: "configmap",

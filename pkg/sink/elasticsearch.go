@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"net/http"
 	"os"
 	"time"
@@ -18,7 +19,6 @@ import (
 	"github.com/sha1sum/aws_signing_client"
 	"github.com/sirupsen/logrus"
 
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/event"
 	"github.com/kubeshop/botkube/pkg/multierror"
@@ -197,12 +197,12 @@ func (e *Elasticsearch) SendEvent(ctx context.Context, event event.Event, eventS
 }
 
 // SendMessageToAll is no-op.
-func (e *Elasticsearch) SendMessageToAll(_ context.Context, _ interactive.Message) error {
+func (e *Elasticsearch) SendMessageToAll(_ context.Context, _ api.Message) error {
 	return nil
 }
 
 // SendGenericMessage is no-op.
-func (e *Elasticsearch) SendGenericMessage(_ context.Context, _ interactive.GenericMessage, _ []string) error {
+func (e *Elasticsearch) SendGenericMessage(_ context.Context, _ api.GenericMessage, _ []string) error {
 	return nil
 }
 

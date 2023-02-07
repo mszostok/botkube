@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"strings"
 	"text/tabwriter"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/execute/alias"
 	"github.com/kubeshop/botkube/pkg/execute/command"
@@ -54,7 +54,7 @@ func (e *ExecExecutor) FeatureName() FeatureName {
 }
 
 // List returns a tabular representation of Executors
-func (e *ExecExecutor) List(_ context.Context, cmdCtx CommandContext) (interactive.Message, error) {
+func (e *ExecExecutor) List(_ context.Context, cmdCtx CommandContext) (api.Message, error) {
 	cmdVerb, cmdRes := parseCmdVerb(cmdCtx.Args)
 	defer e.reportCommand(cmdVerb, cmdRes, cmdCtx.Conversation.CommandOrigin, cmdCtx.Platform)
 	e.log.Debug("Listing executors...")

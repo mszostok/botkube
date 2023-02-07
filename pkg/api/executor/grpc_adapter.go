@@ -6,33 +6,50 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-plugin"
+	"github.com/kubeshop/botkube/pkg/config"
+	"github.com/slack-go/slack"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/kubeshop/botkube/pkg/api"
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 )
 
 // Executor defines the Botkube executor plugin functionality.
 type Executor interface {
 	Execute(context.Context, ExecuteInput) (ExecuteOutput, error)
 	Metadata(ctx context.Context) (api.MetadataOutput, error)
-	Help(context.Context) (interactive.Message, error)
+	Help(context.Context) (api.Message, error)
 }
 
 type (
 	// ExecuteInput holds the input of the Execute function.
 	ExecuteInput struct {
+		// Context holds execution context.
+		Context ExecuteInputContext
 		// Command holds the command to be executed.
 		Command string
 		// Configs is a list of Executor configurations specified by users.
 		Configs []*Config
 	}
 
+	// ExecuteInputContext holds execution context.
+	ExecuteInputContext struct {
+		CommunicationPlatform config.CommPlatformIntegration
+
+		// SlackState represents modal state. It's available only if:
+		//  - CommunicationPlatform is config.SocketSlackCommPlatformIntegration
+		//  - and interactive actions were used in the response Message.
+		// This is an alpha feature and may change in the future.
+		// Most likely, it will be generalized to support all communication platforms.
+		SlackState *slack.BlockActionStates
+	}
+
 	// ExecuteOutput holds the output of the Execute function.
 	ExecuteOutput struct {
-		// Data represent the output of processing a given input command.
+		// Data represents the output of processing a given input command.
 		Data string
+		// Message represents the output of processing a given input command.
+		Message api.Message
 	}
 )
 
@@ -76,15 +93,37 @@ type grpcClient struct {
 }
 
 func (p *grpcClient) Execute(ctx context.Context, in ExecuteInput) (ExecuteOutput, error) {
-	res, err := p.client.Execute(ctx, &ExecuteRequest{
+	grpcInput := &ExecuteRequest{
 		Command: in.Command,
 		Configs: in.Configs,
-	})
+		Context: &ExecuteContext{
+			CommunicationPlatform: string(in.Context.CommunicationPlatform),
+		},
+	}
+
+	if in.Context.CommunicationPlatform == config.SocketSlackCommPlatformIntegration && in.Context.SlackState != nil {
+		rawState, err := json.Marshal(in.Context.SlackState)
+		if err != nil {
+			return ExecuteOutput{}, fmt.Errorf("while marshaling slack state: %w", err)
+		}
+		grpcInput.Context.SlackState = rawState
+	}
+
+	res, err := p.client.Execute(ctx, grpcInput)
 	if err != nil {
 		return ExecuteOutput{}, err
 	}
+
+	var msg api.Message
+	if len(res.Message) != 0 && string(res.Message) != "" {
+		if err := json.Unmarshal(res.Message, &msg); err != nil {
+			return ExecuteOutput{}, fmt.Errorf("while unmarshalling message from JSON: %w", err)
+		}
+	}
+
 	return ExecuteOutput{
-		Data: res.Data,
+		Message: msg,
+		Data:    res.Data,
 	}, nil
 }
 
@@ -105,14 +144,14 @@ func (p *grpcClient) Metadata(ctx context.Context) (api.MetadataOutput, error) {
 	}, nil
 }
 
-func (p *grpcClient) Help(ctx context.Context) (interactive.Message, error) {
+func (p *grpcClient) Help(ctx context.Context) (api.Message, error) {
 	resp, err := p.client.Help(ctx, &emptypb.Empty{})
 	if err != nil {
-		return interactive.Message{}, err
+		return api.Message{}, err
 	}
-	var msg interactive.Message
+	var msg api.Message
 	if err := json.Unmarshal(resp.Help, &msg); err != nil {
-		return interactive.Message{}, fmt.Errorf("while unmarshalling help from JSON: %w", err)
+		return api.Message{}, fmt.Errorf("while unmarshalling help from JSON: %w", err)
 	}
 	return msg, nil
 }
@@ -123,15 +162,32 @@ type grpcServer struct {
 }
 
 func (p *grpcServer) Execute(ctx context.Context, request *ExecuteRequest) (*ExecuteResponse, error) {
+	var slackState slack.BlockActionStates
+	if request.Context != nil && request.Context.SlackState != nil {
+		if err := json.Unmarshal(request.Context.SlackState, &slackState); err != nil {
+			return nil, fmt.Errorf("while unmarshalling slack state from JSON: %w", err)
+		}
+	}
+
 	out, err := p.Impl.Execute(ctx, ExecuteInput{
 		Command: request.Command,
 		Configs: request.Configs,
+		Context: ExecuteInputContext{
+			CommunicationPlatform: config.CommPlatformIntegration(request.Context.CommunicationPlatform),
+			SlackState:            &slackState,
+		},
 	})
 	if err != nil {
 		return nil, err
 	}
+
+	marshalled, err := json.Marshal(out.Message)
+	if err != nil {
+		return nil, fmt.Errorf("while marshalling help to JSON: %w", err)
+	}
 	return &ExecuteResponse{
-		Data: out.Data,
+		Message: marshalled,
+		Data:    out.Data,
 	}, nil
 }
 

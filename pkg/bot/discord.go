@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"regexp"
 	"strings"
 	"sync"
@@ -155,7 +156,7 @@ func (b *Discord) SendEvent(_ context.Context, event event.Event, eventSources [
 
 // SendGenericMessage sends interactive message to selected Discord channels.
 // Context is not supported by client: See https://github.com/bwmarrin/discordgo/issues/752.
-func (b *Discord) SendGenericMessage(_ context.Context, genericMsg interactive.GenericMessage, sourceBindings []string) error {
+func (b *Discord) SendGenericMessage(_ context.Context, genericMsg api.GenericMessage, sourceBindings []string) error {
 	msg := genericMsg.ForBot(b.BotName())
 
 	errs := multierror.New()
@@ -175,7 +176,7 @@ func (b *Discord) SendGenericMessage(_ context.Context, genericMsg interactive.G
 
 // SendMessageToAll sends interactive message to all Discord channels.
 // Context is not supported by client: See https://github.com/bwmarrin/discordgo/issues/752.
-func (b *Discord) SendMessageToAll(_ context.Context, msg interactive.Message) error {
+func (b *Discord) SendMessageToAll(_ context.Context, msg api.Message) error {
 	errs := multierror.New()
 	for _, channel := range b.getChannels() {
 		channelID := channel.ID
@@ -285,7 +286,7 @@ func (b *Discord) handleMessage(ctx context.Context, dm discordMessage) error {
 	return nil
 }
 
-func (b *Discord) send(channelID string, resp interactive.Message) error {
+func (b *Discord) send(channelID string, resp api.Message) error {
 	b.log.Debugf("Discord Response: %s", resp)
 
 	markdown := interactive.RenderMessage(b.mdFormatter, resp)

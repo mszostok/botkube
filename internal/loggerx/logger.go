@@ -14,18 +14,18 @@ type Config struct {
 
 // New returns a new logger based on a given configuration.
 func New(cfg Config) logrus.FieldLogger {
-	logger := logrus.New()
-	// Output to stdout instead of the default stderr
-	logger.SetOutput(os.Stdout)
-
 	// Only logger the warning severity or above.
 	logLevel, err := logrus.ParseLevel(cfg.Level)
 	if err != nil {
 		// Set Info level as a default
 		logLevel = logrus.InfoLevel
 	}
-	logger.SetLevel(logLevel)
-	logger.Formatter = &logrus.TextFormatter{FullTimestamp: true, DisableColors: cfg.DisableColors}
 
-	return logger
+	return &logrus.Logger{
+		Out:       os.Stdout,
+		Formatter: &logrus.TextFormatter{FullTimestamp: true, DisableColors: cfg.DisableColors},
+		Hooks:     make(logrus.LevelHooks),
+		Level:     logLevel,
+		ExitFunc:  os.Exit,
+	}
 }

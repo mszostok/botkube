@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"text/tabwriter"
 
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/execute/command"
 	"github.com/kubeshop/botkube/pkg/multierror"
@@ -33,7 +33,7 @@ type executorFilter interface {
 }
 
 // CommandFn is a single command (eg. List())
-type CommandFn func(ctx context.Context, cmdCtx CommandContext) (interactive.Message, error)
+type CommandFn func(ctx context.Context, cmdCtx CommandContext) (api.Message, error)
 
 // CommandContext contains the context for CommandFn
 type CommandContext struct {

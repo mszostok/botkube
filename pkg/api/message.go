@@ -1,4 +1,4 @@
-package interactive
+package api
 
 import (
 	"fmt"
@@ -30,6 +30,11 @@ type MessageType string
 const (
 	// Default defines a message that should be displayed in default mode supported by communicator.
 	Default MessageType = ""
+	// Interactive defines a message that should be displayed in interactive mode supported by communicator.
+	Interactive MessageType = "interactive"
+	// BaseBodyWithFilter defines a message that should be displayed in plaintext mode supported by communicator.
+	// In this form the built-in filter is supported.
+	BaseBodyWithFilter MessageType = "baseBodyWithFilter"
 	// Popup defines a message that should be displayed to the user as popup (if possible).
 	Popup MessageType = "form"
 )
@@ -47,6 +52,36 @@ type Message struct {
 	PlaintextInputs   LabelInputs
 	OnlyVisibleForYou bool
 	ReplaceOriginal   bool
+}
+
+func NewCodeBlockMessage(msg string, allowBotkubeFilter bool) Message {
+	var mType MessageType
+	if allowBotkubeFilter {
+		mType = BaseBodyWithFilter
+	}
+	return Message{
+		Type: mType,
+		Base: Base{ // TODO: header...
+			Body: Body{
+				CodeBlock: msg,
+			},
+		},
+	}
+}
+
+func NewPlaintextMessage(msg string, useBotkubeFilter bool) Message {
+	var mType MessageType
+	if useBotkubeFilter {
+		mType = BaseBodyWithFilter
+	}
+	return Message{
+		Type: mType,
+		Base: Base{ // TODO: header...
+			Body: Body{
+				Plaintext: msg,
+			},
+		},
+	}
 }
 
 // HasSections returns true if message has interactive sections.

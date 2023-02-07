@@ -1,10 +1,9 @@
 package execute
 
 import (
+	"github.com/kubeshop/botkube/pkg/api"
 	"os/exec"
 	"strings"
-
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 )
 
 // CommandRunner provides functionality to run arbitrary commands.
@@ -51,15 +50,15 @@ func (*OSCommand) RunCombinedOutput(command string, args []string) (string, erro
 }
 
 type (
-	executorFunc    func() (interactive.Message, error)
+	executorFunc    func() (api.Message, error)
 	executorsRunner map[string]executorFunc
 )
 
-func (cmds executorsRunner) SelectAndRun(cmdVerb string) (interactive.Message, error) {
+func (cmds executorsRunner) SelectAndRun(cmdVerb string) (api.Message, error) {
 	cmdVerb = strings.ToLower(cmdVerb)
 	fn, found := cmds[cmdVerb]
 	if !found {
-		return interactive.Message{}, errUnsupportedCommand
+		return api.Message{}, errUnsupportedCommand
 	}
 	return fn()
 }

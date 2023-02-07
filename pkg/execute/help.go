@@ -2,6 +2,7 @@ package execute
 
 import (
 	"context"
+	"github.com/kubeshop/botkube/pkg/api"
 
 	"github.com/sirupsen/logrus"
 
@@ -47,7 +48,7 @@ func (e *HelpExecutor) Commands() map[command.Verb]CommandFn {
 }
 
 // Help returns new help message
-func (e *HelpExecutor) Help(_ context.Context, cmdCtx CommandContext) (interactive.Message, error) {
+func (e *HelpExecutor) Help(_ context.Context, cmdCtx CommandContext) (api.Message, error) {
 	cmdVerb, _ := parseCmdVerb(cmdCtx.Args)
 	e.reportCommand(cmdVerb, cmdCtx.Conversation.CommandOrigin, cmdCtx.Platform)
 	return interactive.NewHelpMessage(cmdCtx.Platform, cmdCtx.ClusterName, cmdCtx.BotName, e.enabledPluginExecutors).Build(), nil

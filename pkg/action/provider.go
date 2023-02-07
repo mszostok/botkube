@@ -5,13 +5,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"html/template"
 	"strings"
 
 	sprig "github.com/go-task/slim-sprig"
 	"github.com/sirupsen/logrus"
 
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/event"
 	"github.com/kubeshop/botkube/pkg/execute"
@@ -82,7 +82,7 @@ func (p *Provider) RenderedActionsForEvent(e event.Event, sourceBindings []strin
 
 // ExecuteEventAction executes action for given event.
 // WARNING: The result interactive.Message contains BotNamePlaceholder, which should be replaced before sending the message.
-func (p *Provider) ExecuteEventAction(ctx context.Context, action event.Action) interactive.GenericMessage {
+func (p *Provider) ExecuteEventAction(ctx context.Context, action event.Action) api.GenericMessage {
 	e := p.executorFactory.NewDefault(execute.NewDefaultInput{
 		Conversation: execute.Conversation{
 			IsAuthenticated:  true,
@@ -123,11 +123,11 @@ func (p *Provider) renderActionCommand(action config.Action, data renderingData)
 }
 
 type genericMessage struct {
-	response interactive.Message
+	response api.Message
 }
 
 // ForBot returns message prepared for a bot with a given name.
-func (g *genericMessage) ForBot(botName string) interactive.Message {
+func (g *genericMessage) ForBot(botName string) api.Message {
 	g.response.ReplaceBotNameInCommands(universalBotNamePlaceholder, botName)
 	return g.response
 }

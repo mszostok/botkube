@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -305,7 +306,7 @@ func (b *Teams) processMessage(ctx context.Context, activity schema.Activity) (i
 	return b.convertInteractiveMessage(e.Execute(ctx), false)
 }
 
-func (b *Teams) convertInteractiveMessage(in interactive.Message, forceMarkdown bool) (int, string) {
+func (b *Teams) convertInteractiveMessage(in api.Message, forceMarkdown bool) (int, string) {
 	var out string
 
 	if in.HasSections() {
@@ -384,7 +385,7 @@ func (b *Teams) SendEvent(ctx context.Context, event event.Event, eventSources [
 }
 
 // SendGenericMessage sends message to MS Teams to selected conversations.
-func (b *Teams) SendGenericMessage(ctx context.Context, genericMsg interactive.GenericMessage, sourceBindings []string) error {
+func (b *Teams) SendGenericMessage(ctx context.Context, genericMsg api.GenericMessage, sourceBindings []string) error {
 	msg := genericMsg.ForBot(b.BotName())
 
 	errs := multierror.New()
@@ -402,14 +403,14 @@ func (b *Teams) SendGenericMessage(ctx context.Context, genericMsg interactive.G
 			errs = multierror.Append(errs, fmt.Errorf("while sending Teams message to channel %q: %w", channelID, err))
 			continue
 		}
-		b.log.Debugf("Message successfully sent to channel %q", channelID)
+		b.log.Debugf("Data successfully sent to channel %q", channelID)
 	}
 
 	return errs.ErrorOrNil()
 }
 
 // SendMessageToAll sends message to MS Teams to all conversations.
-func (b *Teams) SendMessageToAll(ctx context.Context, msg interactive.Message) error {
+func (b *Teams) SendMessageToAll(ctx context.Context, msg api.Message) error {
 	errs := multierror.New()
 	for _, convCfg := range b.getConversations() {
 		channelID := convCfg.ref.ChannelID
@@ -425,7 +426,7 @@ func (b *Teams) SendMessageToAll(ctx context.Context, msg interactive.Message) e
 			errs = multierror.Append(errs, fmt.Errorf("while sending Teams message to channel %q: %w", channelID, err))
 			continue
 		}
-		b.log.Debugf("Message successfully sent to channel %q", channelID)
+		b.log.Debugf("Data successfully sent to channel %q", channelID)
 	}
 
 	return errs.ErrorOrNil()

@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"reflect"
 	"text/tabwriter"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/execute/command"
 	"github.com/kubeshop/botkube/pkg/maputil"
@@ -53,7 +53,7 @@ func (e *SourceExecutor) FeatureName() FeatureName {
 }
 
 // List returns a tabular representation of Executors
-func (e *SourceExecutor) List(ctx context.Context, cmdCtx CommandContext) (interactive.Message, error) {
+func (e *SourceExecutor) List(ctx context.Context, cmdCtx CommandContext) (api.Message, error) {
 	cmdVerb, cmdRes := parseCmdVerb(cmdCtx.Args)
 	defer e.reportCommand(cmdVerb, cmdRes, cmdCtx.Conversation.CommandOrigin, cmdCtx.Platform)
 	e.log.Debug("List sources")

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"net/url"
 	"regexp"
 	"strings"
@@ -245,7 +246,7 @@ func (b *Mattermost) handleMessage(ctx context.Context, mm *mattermostMessage) e
 }
 
 // Send messages to Mattermost
-func (b *Mattermost) send(channelID string, resp interactive.Message) error {
+func (b *Mattermost) send(channelID string, resp api.Message) error {
 	b.log.Debugf("Mattermost Response: %s", resp)
 
 	markdown := interactive.RenderMessage(b.mdFormatter, resp)
@@ -420,7 +421,7 @@ func (b *Mattermost) getChannelsToNotify(eventSources []string) []string {
 }
 
 // SendGenericMessage sends message to selected Mattermost channels.
-func (b *Mattermost) SendGenericMessage(_ context.Context, genericMsg interactive.GenericMessage, sourceBindings []string) error {
+func (b *Mattermost) SendGenericMessage(_ context.Context, genericMsg api.GenericMessage, sourceBindings []string) error {
 	msg := genericMsg.ForBot(b.BotName())
 
 	errs := multierror.New()
@@ -438,7 +439,7 @@ func (b *Mattermost) SendGenericMessage(_ context.Context, genericMsg interactiv
 }
 
 // SendMessageToAll sends message to all Mattermost channels.
-func (b *Mattermost) SendMessageToAll(_ context.Context, msg interactive.Message) error {
+func (b *Mattermost) SendMessageToAll(_ context.Context, msg api.Message) error {
 	errs := multierror.New()
 	for _, channel := range b.getChannels() {
 		channelID := channel.ID

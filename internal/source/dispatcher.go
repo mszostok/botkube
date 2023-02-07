@@ -3,12 +3,12 @@ package source
 import (
 	"context"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 
 	"github.com/sirupsen/logrus"
 
 	"github.com/kubeshop/botkube/internal/plugin"
 	"github.com/kubeshop/botkube/pkg/api/source"
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/notifier"
 )
 
@@ -68,8 +68,8 @@ func (d *Dispatcher) Dispatch(ctx context.Context, pluginName string, pluginConf
 func (d *Dispatcher) dispatch(ctx context.Context, event []byte, sources []string) {
 	for _, n := range d.notifiers {
 		go func(n notifier.Notifier) {
-			msg := interactive.Message{
-				Base: interactive.Base{
+			msg := api.Message{
+				Base: api.Base{
 					Description: string(event),
 				},
 			}
@@ -82,10 +82,10 @@ func (d *Dispatcher) dispatch(ctx context.Context, event []byte, sources []strin
 }
 
 type genericMessage struct {
-	response interactive.Message
+	response api.Message
 }
 
 // ForBot returns interactive message.
-func (g *genericMessage) ForBot(string) interactive.Message {
+func (g *genericMessage) ForBot(string) api.Message {
 	return g.response
 }

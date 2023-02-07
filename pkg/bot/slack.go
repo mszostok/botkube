@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"regexp"
 	"sync"
 
@@ -260,7 +261,7 @@ func (b *Slack) handleMessage(ctx context.Context, msg slackMessage) error {
 	return nil
 }
 
-func (b *Slack) send(msg slackMessage, resp interactive.Message, onlyVisibleToUser bool) error {
+func (b *Slack) send(msg slackMessage, resp api.Message, onlyVisibleToUser bool) error {
 	b.log.Debugf("Slack Response: %s", resp)
 
 	markdown := interactive.RenderMessage(b.mdFormatter, resp)
@@ -344,7 +345,7 @@ func (b *Slack) getChannelsToNotify(sourceBindings []string) []string {
 }
 
 // SendGenericMessage sends message to selected Slack channels.
-func (b *Slack) SendGenericMessage(_ context.Context, genericMsg interactive.GenericMessage, sourceBindings []string) error {
+func (b *Slack) SendGenericMessage(_ context.Context, genericMsg api.GenericMessage, sourceBindings []string) error {
 	msg := genericMsg.ForBot(b.BotName())
 
 	errs := multierror.New()
@@ -359,14 +360,14 @@ func (b *Slack) SendGenericMessage(_ context.Context, genericMsg interactive.Gen
 			errs = multierror.Append(errs, fmt.Errorf("while sending Slack message to channel %q: %w", channelName, err))
 			continue
 		}
-		b.log.Debugf("Message successfully sent to channel %q", channelName)
+		b.log.Debugf("Data successfully sent to channel %q", channelName)
 	}
 
 	return errs.ErrorOrNil()
 }
 
 // SendMessageToAll sends message to all Slack channels.
-func (b *Slack) SendMessageToAll(ctx context.Context, msg interactive.Message) error {
+func (b *Slack) SendMessageToAll(ctx context.Context, msg api.Message) error {
 	errs := multierror.New()
 	message := interactive.RenderMessage(b.mdFormatter, msg)
 	for _, channel := range b.getChannels() {
@@ -413,7 +414,7 @@ func mdHeaderFormatter(msg string) string {
 	return fmt.Sprintf("*%s*", msg)
 }
 
-func uploadFileToSlack(channel string, resp interactive.Message, client *slack.Client, ts string) (*slack.File, error) {
+func uploadFileToSlack(channel string, resp api.Message, client *slack.Client, ts string) (*slack.File, error) {
 	params := slack.FileUploadParameters{
 		Filename:        "Response.txt",
 		Title:           "Response.txt",

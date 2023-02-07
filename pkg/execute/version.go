@@ -2,10 +2,10 @@ package execute
 
 import (
 	"context"
+	"github.com/kubeshop/botkube/pkg/api"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/execute/command"
 )
@@ -43,7 +43,7 @@ func (e *VersionExecutor) Commands() map[command.Verb]CommandFn {
 }
 
 // Version responds with k8s and botkube version string
-func (e *VersionExecutor) Version(ctx context.Context, cmdCtx CommandContext) (interactive.Message, error) {
+func (e *VersionExecutor) Version(ctx context.Context, cmdCtx CommandContext) (api.Message, error) {
 	cmdVerb, _ := parseCmdVerb(cmdCtx.Args)
 	e.reportCommand(cmdVerb, cmdCtx.Conversation.CommandOrigin, cmdCtx.Platform)
 	return respond(e.botkubeVersion, cmdCtx), nil

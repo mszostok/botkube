@@ -3,6 +3,7 @@ package action_test
 import (
 	"context"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"testing"
 
 	"github.com/MakeNowJust/heredoc"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/kubeshop/botkube/internal/loggerx"
 	"github.com/kubeshop/botkube/pkg/action"
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/event"
 	"github.com/kubeshop/botkube/pkg/execute"
@@ -185,16 +185,16 @@ func (f *fakeFactory) NewDefault(input execute.NewDefaultInput) execute.Executor
 
 type fakeExecutor struct{}
 
-func (fakeExecutor) Execute(_ context.Context) interactive.Message {
+func (fakeExecutor) Execute(_ context.Context) api.Message {
 	return fixInteractiveMessage("{{BotName}}")
 }
 
-func fixInteractiveMessage(botName string) interactive.Message {
-	return interactive.Message{
-		Base: interactive.Base{
+func fixInteractiveMessage(botName string) api.Message {
+	return api.Message{
+		Base: api.Base{
 			Header: "Sample",
 		},
-		PlaintextInputs: []interactive.LabelInput{
+		PlaintextInputs: []api.LabelInput{
 			{
 				Command:          fmt.Sprintf("%s kubectl get po foo", botName),
 				Text:             "",

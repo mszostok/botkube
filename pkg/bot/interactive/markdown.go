@@ -2,6 +2,7 @@ package interactive
 
 import (
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"strings"
 
 	formatx "github.com/kubeshop/botkube/pkg/format"
@@ -31,7 +32,7 @@ func DefaultMDFormatter() MDFormatter {
 }
 
 // RenderMessage returns interactive message as a plaintext with Markdown syntax.
-func RenderMessage(mdFormatter MDFormatter, msg Message) string {
+func RenderMessage(mdFormatter MDFormatter, msg api.Message) string {
 	var out strings.Builder
 	addLine := func(in string) {
 		out.WriteString(mdFormatter.newlineFormatter(in))
@@ -54,7 +55,7 @@ func RenderMessage(mdFormatter MDFormatter, msg Message) string {
 
 	for i, section := range msg.Sections {
 		// do not include empty line when there is no base content
-		var empty Base
+		var empty api.Base
 		if i != 0 || msg.Base != empty {
 			addLine("") // padding between sections
 		}

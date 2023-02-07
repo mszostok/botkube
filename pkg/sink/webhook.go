@@ -5,12 +5,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"net/http"
 	"time"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/event"
 	"github.com/kubeshop/botkube/pkg/format"
@@ -110,12 +110,12 @@ func (w *Webhook) SendEvent(ctx context.Context, event event.Event, eventSources
 }
 
 // SendMessageToAll is no-op.
-func (w *Webhook) SendMessageToAll(_ context.Context, _ interactive.Message) error {
+func (w *Webhook) SendMessageToAll(_ context.Context, _ api.Message) error {
 	return nil
 }
 
 // SendGenericMessage is no-op.
-func (w *Webhook) SendGenericMessage(_ context.Context, _ interactive.GenericMessage, _ []string) error {
+func (w *Webhook) SendGenericMessage(_ context.Context, _ api.GenericMessage, _ []string) error {
 	return nil
 }
 

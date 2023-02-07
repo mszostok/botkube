@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"text/tabwriter"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/execute/alias"
 	"github.com/kubeshop/botkube/pkg/execute/command"
@@ -44,20 +44,20 @@ func (e *AliasExecutor) Commands() map[command.Verb]CommandFn {
 }
 
 // List returns a tabular representation of aliases.
-func (e *AliasExecutor) List(_ context.Context, cmdCtx CommandContext) (interactive.Message, error) {
+func (e *AliasExecutor) List(_ context.Context, cmdCtx CommandContext) (api.Message, error) {
 	cmdVerb, cmdRes := parseCmdVerb(cmdCtx.Args)
 	defer e.reportCommand(cmdVerb, cmdRes, cmdCtx.Conversation.CommandOrigin, cmdCtx.Platform)
 	e.log.Debug("Listing aliases...")
 	outMsg := respond(e.getTabularOutput(cmdCtx.Conversation.ExecutorBindings), cmdCtx)
-	outMsg.Sections = []interactive.Section{
+	outMsg.Sections = []api.Section{
 		{
 			Base: outMsg.Base,
-			Context: []interactive.ContextItem{
+			Context: []api.ContextItem{
 				{Text: aliasesForCurrentBindingsMsg},
 			},
 		},
 	}
-	outMsg.Base = interactive.Base{}
+	outMsg.Base = api.Base{}
 
 	return outMsg, nil
 }

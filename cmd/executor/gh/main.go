@@ -10,7 +10,6 @@ import (
 
 	"github.com/kubeshop/botkube/pkg/api"
 	"github.com/kubeshop/botkube/pkg/api/executor"
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/pluginx"
 )
 
@@ -101,10 +100,10 @@ func (e *GHExecutor) Execute(ctx context.Context, in executor.ExecuteInput) (exe
 }
 
 // Help returns help message
-func (*GHExecutor) Help(context.Context) (interactive.Message, error) {
-	return interactive.Message{
-		Base: interactive.Base{
-			Body: interactive.Body{
+func (*GHExecutor) Help(ctx context.Context) (api.Message, error) {
+	return api.Message{
+		Base: api.Base{
+			Body: api.Body{
 				Plaintext: helpMsg,
 			},
 		},

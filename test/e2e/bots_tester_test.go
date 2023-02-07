@@ -3,12 +3,12 @@
 package e2e
 
 import (
+	"github.com/kubeshop/botkube/pkg/api"
 	"regexp"
 	"testing"
 
 	"github.com/sanity-io/litter"
 
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 )
 
@@ -64,7 +64,7 @@ type BotDriver interface {
 	BotName() string
 	BotUserID() string
 	TesterUserID() string
-	WaitForInteractiveMessagePostedRecentlyEqual(userID string, channelID string, message interactive.Message) error
-	WaitForLastInteractiveMessagePostedEqual(userID string, channelID string, message interactive.Message) error
+	WaitForInteractiveMessagePostedRecentlyEqual(userID string, channelID string, message api.Message) error
+	WaitForLastInteractiveMessagePostedEqual(userID string, channelID string, message api.Message) error
 	GetColorByLevel(level config.Level) string
 }

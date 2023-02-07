@@ -3,6 +3,8 @@ package execute
 import (
 	"context"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
+	"github.com/slack-go/slack"
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/status"
@@ -10,7 +12,6 @@ import (
 
 	"github.com/kubeshop/botkube/internal/plugin"
 	"github.com/kubeshop/botkube/pkg/api/executor"
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 )
 
@@ -52,41 +53,79 @@ func (e *PluginExecutor) GetCommandPrefix(args []string) string {
 }
 
 // Execute executes plugin executor based on a given command.
-func (e *PluginExecutor) Execute(ctx context.Context, bindings []string, args []string, command string) (string, error) {
+func (e *PluginExecutor) Execute(ctx context.Context, bindings []string, state *slack.BlockActionStates, cmdCtx CommandContext) (api.Message, error) {
 	e.log.WithFields(logrus.Fields{
 		"bindings": bindings,
-		"command":  command,
+		"command":  cmdCtx.CleanCmd,
 	}).Debugf("Handling plugin command...")
 
-	cmdName := args[0]
+	cmdName := cmdCtx.Args[0]
 	plugins, fullPluginName := e.getEnabledPlugins(bindings, cmdName)
 
 	configs, err := e.collectConfigs(plugins)
 	if err != nil {
-		return "", fmt.Errorf("while collecting configs: %w", err)
+		return api.Message{}, fmt.Errorf("while collecting configs: %w", err)
 	}
 
 	cli, err := e.pluginManager.GetExecutor(fullPluginName)
 	if err != nil {
-		return "", fmt.Errorf("while getting concrete plugin client: %w", err)
+		return api.Message{}, fmt.Errorf("while getting concrete plugin client: %w", err)
 	}
 
 	resp, err := cli.Execute(ctx, executor.ExecuteInput{
-		Command: command,
+		Command: cmdCtx.CleanCmd,
 		Configs: configs,
+		Context: executor.ExecuteInputContext{
+			CommunicationPlatform: cmdCtx.Platform,
+			SlackState:            state,
+		},
 	})
 	if err != nil {
 		s, ok := status.FromError(err)
 		if !ok {
-			return "", NewExecutionCommandError(err.Error())
+			return api.Message{}, NewExecutionCommandError(err.Error())
 		}
-		return "", NewExecutionCommandError(s.Message())
+		return api.Message{}, NewExecutionCommandError(s.Message())
 	}
 
-	return resp.Data, nil
+	if resp.Data != "" {
+		return respond(resp.Data, cmdCtx), nil
+	}
+
+	if resp.Message.Type == api.BaseBodyWithFilter {
+		// only plaintext + code block
+		code := cmdCtx.ExecutorFilter.Apply(resp.Message.Base.Body.CodeBlock)
+		fmt.Println(cmdCtx.ExecutorFilter.IsActive())
+		fmt.Println(code)
+		plaintext := cmdCtx.ExecutorFilter.Apply(resp.Message.Base.Body.Plaintext)
+
+		if code == "" && plaintext == "" {
+			plaintext = emptyResponseMsg
+		}
+		return api.Message{
+			Base: api.Base{
+				Description: header(cmdCtx),
+				Body: api.Body{
+					Plaintext: plaintext,
+					CodeBlock: code,
+				},
+			},
+		}, nil
+	}
+
+	if !resp.Message.OnlyVisibleForYou {
+		// TODO:
+		//  - no option execute filter on output,
+		//  - no option to include interactive filtering
+		resp.Message.Base.Description = header(cmdCtx)
+	}
+
+	resp.Message.ReplaceBotNameInCommands("@Botkube", cmdCtx.BotName)
+
+	return resp.Message, nil
 }
 
-func (e *PluginExecutor) Help(ctx context.Context, bindings []string, args []string, command string) (interactive.Message, error) {
+func (e *PluginExecutor) Help(ctx context.Context, bindings []string, args []string, command string) (api.Message, error) {
 	e.log.WithFields(logrus.Fields{
 		"bindings": bindings,
 		"command":  command,
@@ -97,7 +136,7 @@ func (e *PluginExecutor) Help(ctx context.Context, bindings []string, args []str
 
 	cli, err := e.pluginManager.GetExecutor(fullPluginName)
 	if err != nil {
-		return interactive.Message{}, fmt.Errorf("while getting concrete plugin client: %w", err)
+		return api.Message{}, fmt.Errorf("while getting concrete plugin client: %w", err)
 	}
 	e.log.Debug("running help command")
 	return cli.Help(ctx)

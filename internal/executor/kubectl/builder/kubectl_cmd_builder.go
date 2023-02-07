@@ -1,11 +1,11 @@
-package execute
+package builder
 
 import (
 	"context"
 	"errors"
 	"fmt"
 	"github.com/kubeshop/botkube/pkg/api"
-	"sort"
+	"github.com/kubeshop/botkube/pkg/execute"
 	"strings"
 
 	"github.com/google/uuid"
@@ -18,12 +18,14 @@ import (
 	"github.com/kubeshop/botkube/pkg/execute/kubectl"
 )
 
+var errUnsupportedCommand = errors.New("unsupported command")
+
 const (
-	verbsDropdownCommand             = "kc-cmd-builder --verbs"
-	resourceTypesDropdownCommand     = "kc-cmd-builder --resource-type"
-	resourceNamesDropdownCommand     = "kc-cmd-builder --resource-name"
-	resourceNamespaceDropdownCommand = "kc-cmd-builder --namespace"
-	filterPlaintextInputCommand      = "kc-cmd-builder --filter-query"
+	verbsDropdownCommand             = "kubectl @builder --verbs"
+	resourceTypesDropdownCommand     = "kubectl @builder --resource-type"
+	resourceNamesDropdownCommand     = "kubectl @builder --resource-name"
+	resourceNamespaceDropdownCommand = "kubectl @builder --namespace"
+	filterPlaintextInputCommand      = "kubectl @builder --filter-query"
 	kubectlCommandName               = "kubectl"
 	dropdownItemsLimit               = 100
 	noKubectlCommandsInChannel       = "No `kubectl` commands are enabled in this channel. To learn how to enable them, visit https://docs.botkube.io/configuration/executor."
@@ -42,126 +44,95 @@ var errRequiredVerbDropdown = errors.New("verbs dropdown select cannot be empty"
 
 type (
 	kcMerger interface {
-		MergeAllEnabled(includeBindings []string) kubectl.EnabledKubectl
+		MergeAllEnabled() kubectl.EnabledKubectl
 	}
-	kcExecutor interface {
-		Execute(bindings []string, command string, isAuthChannel bool, cmdCtx CommandContext) (string, error)
-	}
+
 	// NamespaceLister provides an option to list all namespaces in a given cluster.
 	NamespaceLister interface {
 		List(ctx context.Context, opts metav1.ListOptions) (*corev1.NamespaceList, error)
+	}
+
+	kcRunner interface {
+		RunKubectlCommand(ctx context.Context, defaultNamespace, cmd string) (string, error)
 	}
 )
 
 // KubectlCmdBuilder provides functionality to handle interactive kubectl command selection.
 type KubectlCmdBuilder struct {
 	log             logrus.FieldLogger
-	kcExecutor      kcExecutor
-	merger          kcMerger
-	namespaceLister NamespaceLister
-	commandGuard    CommandGuard
+	NamespaceLister NamespaceLister
+	CommandGuard    execute.CommandGuard
+	kcRunner        kcRunner
 }
 
 // NewKubectlCmdBuilder returns a new KubectlCmdBuilder instance.
-func NewKubectlCmdBuilder(log logrus.FieldLogger, merger kcMerger, executor kcExecutor, namespaceLister NamespaceLister, guard CommandGuard) *KubectlCmdBuilder {
+func NewKubectlCmdBuilder(log logrus.FieldLogger, executor kcRunner) *KubectlCmdBuilder {
 	return &KubectlCmdBuilder{
-		log:             log,
-		kcExecutor:      executor,
-		merger:          merger,
-		namespaceLister: namespaceLister,
-		commandGuard:    guard,
-	}
-}
-
-// CanHandle returns true if it's allowed kubectl command that can be handled by this executor.
-func (e *KubectlCmdBuilder) CanHandle(args []string) bool {
-	// if we know the command prefix, we can handle that command :)
-	return e.GetCommandPrefix(args) != ""
-}
-
-// GetCommandPrefix returns the command prefix only if it's known.
-func (e *KubectlCmdBuilder) GetCommandPrefix(args []string) string {
-	switch len(args) {
-	case 0:
-		return ""
-
-	case 1:
-		//  check if it's only a kubectl command without arguments
-		if args[0] == kubectlCommandName {
-			return args[0]
-		}
-		// it is a single arg which cannot start the kubectl command builder
-		return ""
-
-	default:
-		// check if request comes from command builder message
-		gotCmd := fmt.Sprintf("%s %s", args[0], args[1])
-		if _, found := knownCmdPrefix[gotCmd]; found {
-			return gotCmd
-		}
-		return ""
+		log:      log,
+		kcRunner: executor,
 	}
 }
 
 // Do executes a given kc-cmd-builder command based on args.
 //
 // TODO: once we will have a real use-case, we should abstract the Slack state and introduce our own model.
-func (e *KubectlCmdBuilder) Do(ctx context.Context, args []string, platform config.CommPlatformIntegration, bindings []string, state *slack.BlockActionStates, botName string, header string, cmdCtx CommandContext) (api.Message, error) {
+func (e *KubectlCmdBuilder) Do(ctx context.Context, l *logrus.Logger, cmd, defaultNamespace string, platform config.CommPlatformIntegration, state *slack.BlockActionStates, botName string) (api.Message, error) {
 	var empty api.Message
 
+	e.log = l
 	if platform != config.SocketSlackCommPlatformIntegration {
 		e.log.Debug("Interactive kubectl command builder is not supported on %s platform", platform)
-		return e.message(header, kubectlMissingCommandMsg)
+		return e.message(kubectlMissingCommandMsg)
 	}
 
-	allVerbs, allTypes, defaultNs := e.getEnableKubectlDetails(bindings)
+	allVerbs, allTypes := e.getEnableKubectlDetails()
 	if len(allVerbs) == 0 {
-		return e.message(header, noKubectlCommandsInChannel)
+		return e.message(noKubectlCommandsInChannel)
 	}
 
-	allVerbs = e.commandGuard.FilterSupportedVerbs(allVerbs)
+	allVerbs = e.CommandGuard.FilterSupportedVerbs(allVerbs)
 
-	// if only command name was specified, return initial command builder message
-	if len(args) == 1 {
+	if cmd == "" { // return initial command builder message
 		return e.initialMessage(botName, allVerbs)
 	}
 
 	stateDetails := e.extractStateDetails(botName, state)
 	if stateDetails.namespace == "" {
-		stateDetails.namespace = defaultNs
+		stateDetails.namespace = defaultNamespace
 	}
 
-	var (
-		cmdName = args[0]
-		cmdVerb = args[1]
-		cmd     = fmt.Sprintf("%s %s", cmdName, cmdVerb)
-	)
-
+	e.log.Info("state", stateDetails.namespace)
+	e.log.Info("state", stateDetails.resourceName)
+	e.log.Info("state", stateDetails.resourceType)
+	e.log.Info("state", stateDetails.verb)
 	cmds := executorsRunner{
 		verbsDropdownCommand: func() (api.Message, error) {
-			return e.renderMessage(ctx, botName, stateDetails, bindings, allVerbs, allTypes, cmdCtx)
+			return e.renderMessage(ctx, botName, stateDetails, allVerbs, allTypes)
 		},
 		resourceTypesDropdownCommand: func() (api.Message, error) {
 			// the resource type was selected, so clear resource name from command preview.
 			stateDetails.resourceName = ""
-			return e.renderMessage(ctx, botName, stateDetails, bindings, allVerbs, allTypes, cmdCtx)
+			e.log.Info("Selecting resource type")
+			return e.renderMessage(ctx, botName, stateDetails, allVerbs, allTypes)
 		},
 		resourceNamesDropdownCommand: func() (api.Message, error) {
 			// this is called only when the resource name is directly selected from dropdown, so we need to include
 			// it in command preview.
-			return e.renderMessage(ctx, botName, stateDetails, bindings, allVerbs, allTypes, cmdCtx)
+			return e.renderMessage(ctx, botName, stateDetails, allVerbs, allTypes)
 		},
 		resourceNamespaceDropdownCommand: func() (api.Message, error) {
 			// when the namespace was changed, there is a small chance that resource name will be still matching,
 			// we will need to do the external call to check that. For now, we clear resource name from command preview.
 			stateDetails.resourceName = ""
-			return e.renderMessage(ctx, botName, stateDetails, bindings, allVerbs, allTypes, cmdCtx)
+			return e.renderMessage(ctx, botName, stateDetails, allVerbs, allTypes)
 		},
 		filterPlaintextInputCommand: func() (api.Message, error) {
-			return e.renderMessage(ctx, botName, stateDetails, bindings, allVerbs, allTypes, cmdCtx)
+			return e.renderMessage(ctx, botName, stateDetails, allVerbs, allTypes)
 		},
 	}
 
+	args := strings.Fields(cmd)
+	cmd = fmt.Sprintf("kubectl %s %s", args[0], args[1])
 	msg, err := cmds.SelectAndRun(cmd)
 	if err != nil {
 		e.log.WithField("error", err.Error()).Error("Cannot render the kubectl command builder. Returning empty message.")
@@ -195,7 +166,7 @@ func (e *KubectlCmdBuilder) initialMessage(botName string, allVerbs []string) (a
 	return msg, nil
 }
 
-func (e *KubectlCmdBuilder) renderMessage(ctx context.Context, botName string, stateDetails stateDetails, bindings, allVerbs, allTypes []string, cmdCtx CommandContext) (api.Message, error) {
+func (e *KubectlCmdBuilder) renderMessage(ctx context.Context, botName string, stateDetails stateDetails, allVerbs, allTypes []string) (api.Message, error) {
 	var empty api.Message
 
 	allVerbsSelect := VerbSelect(botName, allVerbs, stateDetails.verb)
@@ -228,7 +199,7 @@ func (e *KubectlCmdBuilder) renderMessage(ctx context.Context, botName string, s
 		), nil
 	}
 
-	// 3. If resource type is not on the listy anymore,
+	// 3. If resource type is not on the list anymore,
 	//    render:
 	//      1. Dropdown with all verbs
 	//      2. Dropdown with all related resource types
@@ -246,8 +217,8 @@ func (e *KubectlCmdBuilder) renderMessage(ctx context.Context, botName string, s
 	//   1. Verb requires resource types
 	//   2. Selected resource type is still valid for the selected verb
 	var (
-		resNames = e.tryToGetResourceNamesSelect(botName, bindings, stateDetails, cmdCtx)
-		nsNames  = e.tryToGetNamespaceSelect(ctx, botName, bindings, stateDetails)
+		resNames = e.tryToGetResourceNamesSelect(botName, stateDetails)
+		nsNames  = e.tryToGetNamespaceSelect(ctx, botName, stateDetails)
 	)
 
 	// 4. If a given resource name is not on the list anymore, clear it.
@@ -269,20 +240,24 @@ func (e *KubectlCmdBuilder) renderMessage(ctx context.Context, botName string, s
 	), nil
 }
 
-func (e *KubectlCmdBuilder) tryToGetResourceNamesSelect(botName string, bindings []string, state stateDetails, cmdCtx CommandContext) *api.Select {
+func (e *KubectlCmdBuilder) tryToGetResourceNamesSelect(botName string, state stateDetails) *api.Select {
+	e.log.Info("Get resource names")
 	if state.resourceType == "" {
+		e.log.Info("Return empty resource name")
 		return EmptyResourceNameDropdown()
 	}
-	cmd := fmt.Sprintf(`%s get %s --ignore-not-found=true -o go-template='{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}'`, kubectlCommandName, state.resourceType)
+	cmd := fmt.Sprintf(`get %s --ignore-not-found=true -o go-template='{{range .items}}{{.metadata.name}}{{"\n"}}{{end}}'`, state.resourceType)
 	if state.namespace != "" {
 		cmd = fmt.Sprintf("%s -n %s", cmd, state.namespace)
 	}
+	e.log.Infof("Run cmd %q", cmd)
 
-	out, err := e.kcExecutor.Execute(bindings, cmd, true, cmdCtx)
+	out, err := e.kcRunner.RunKubectlCommand(context.Background(), "default", cmd) // TODO: context
 	if err != nil {
 		e.log.WithField("error", err.Error()).Error("Cannot fetch resource names. Returning empty resource name dropdown.")
 		return EmptyResourceNameDropdown()
 	}
+	e.log.Infof("Got out %q", out)
 
 	lines := getNonEmptyLines(out)
 	if len(lines) == 0 {
@@ -292,13 +267,12 @@ func (e *KubectlCmdBuilder) tryToGetResourceNamesSelect(botName string, bindings
 	return ResourceNamesSelect(botName, overflowSentence(lines), state.resourceName)
 }
 
-func (e *KubectlCmdBuilder) tryToGetNamespaceSelect(ctx context.Context, botName string, bindings []string, details stateDetails) *api.Select {
+func (e *KubectlCmdBuilder) tryToGetNamespaceSelect(ctx context.Context, botName string, details stateDetails) *api.Select {
 	log := e.log.WithFields(logrus.Fields{
-		"state":    details,
-		"bindings": bindings,
+		"state": details,
 	})
 
-	resourceDetails, err := e.commandGuard.GetResourceDetails(details.verb, details.resourceType)
+	resourceDetails, err := e.CommandGuard.GetResourceDetails(details.verb, details.resourceType)
 	if err != nil {
 		log.WithField("error", err.Error()).Error("Cannot fetch resource details, ignoring namespace dropdown...")
 		return nil
@@ -309,7 +283,7 @@ func (e *KubectlCmdBuilder) tryToGetNamespaceSelect(ctx context.Context, botName
 		return nil
 	}
 
-	allClusterNamespaces, err := e.namespaceLister.List(ctx, metav1.ListOptions{
+	allClusterNamespaces, err := e.NamespaceLister.List(ctx, metav1.ListOptions{
 		Limit: dropdownItemsLimit,
 	})
 	if err != nil {
@@ -318,19 +292,19 @@ func (e *KubectlCmdBuilder) tryToGetNamespaceSelect(ctx context.Context, botName
 	}
 
 	var (
-		kc        = e.merger.MergeAllEnabled(bindings)
-		allowedNS = kc.AllowedNamespacesPerResource[details.resourceType]
-		finalNS   []dropdownItem
+		//kc        = e.merger.MergeAllEnabled()
+		//allowedNS = kc.AllowedNamespacesPerResource[details.resourceType]
+		finalNS []dropdownItem
 	)
 
 	initialNamespace := newDropdownItem(details.namespace, details.namespace)
 	initialNamespace = e.appendNamespaceSuffixIfDefault(initialNamespace)
 
 	for _, item := range allClusterNamespaces.Items {
-		if !allowedNS.IsAllowed(item.Name) {
-			log.WithField("namespace", item.Name).Debug("Namespace is not allowed, so skipping it.")
-			continue
-		}
+		//if !allowedNS.IsAllowed(item.Name) {
+		//	log.WithField("namespace", item.Name).Debug("Namespace is not allowed, so skipping it.")
+		//	continue
+		//}
 
 		kv := newDropdownItem(item.Name, item.Name)
 		if initialNamespace.Value == kv.Value {
@@ -351,28 +325,36 @@ func (e *KubectlCmdBuilder) appendNamespaceSuffixIfDefault(in dropdownItem) drop
 	return in
 }
 
-func (e *KubectlCmdBuilder) getEnableKubectlDetails(bindings []string) (verbs []string, resources []string, namespace string) {
-	enabledKubectls := e.merger.MergeAllEnabled(bindings)
-	for key := range enabledKubectls.AllowedKubectlResource {
-		resources = append(resources, key)
+func (e *KubectlCmdBuilder) getEnableKubectlDetails() ([]string, []string) {
+	// TODO: take from can-i or from configuration...
+	verbs := []string{
+		"api-resources", "api-versions", "cluster-info", "describe", "explain", "get", "logs", "top",
 	}
-	sort.Strings(resources)
-
-	for key := range enabledKubectls.AllowedKubectlVerb {
-		verbs = append(verbs, key)
+	resources := []string{
+		"deployments", "pods", "namespaces", "daemonsets", "statefulsets", "storageclasses", "nodes", "configmaps", "services", "ingresses",
 	}
-	sort.Strings(verbs)
-
-	if enabledKubectls.DefaultNamespace == "" {
-		enabledKubectls.DefaultNamespace = kubectlDefaultNamespace
-	}
-
-	return verbs, resources, enabledKubectls.DefaultNamespace
+	return verbs, resources
+	//enabledKubectls := e.merger.MergeAllEnabled(bindings)
+	//for key := range enabledKubectls.AllowedKubectlResource {
+	//	resources = append(resources, key)
+	//}
+	//sort.Strings(resources)
+	//
+	//for key := range enabledKubectls.AllowedKubectlVerb {
+	//	verbs = append(verbs, key)
+	//}
+	//sort.Strings(verbs)
+	//
+	//if enabledKubectls.DefaultNamespace == "" {
+	//	enabledKubectls.DefaultNamespace = kubectlDefaultNamespace
+	//}
+	//
+	//return verbs, resources, enabledKubectls.DefaultNamespace
 }
 
 // getAllowedResourcesSelectList returns dropdown select with allowed resources for a given verb.
 func (e *KubectlCmdBuilder) getAllowedResourcesSelectList(botName, verb string, resources []string, resourceType string) (*api.Select, error) {
-	allowedResources, err := e.commandGuard.GetAllowedResourcesForVerb(verb, resources)
+	allowedResources, err := e.CommandGuard.GetAllowedResourcesForVerb(verb, resources)
 	if err != nil {
 		return nil, err
 	}
@@ -409,7 +391,8 @@ func (e *KubectlCmdBuilder) extractStateDetails(botName string, state *slack.Blo
 			details.dropdownsBlockID = blockID
 		}
 		for id, act := range blocks {
-			id = strings.TrimPrefix(id, botName)
+			//id = strings.TrimPrefix(id, botName)
+			_, id, _ = strings.Cut(id, " ")
 			id = strings.TrimSpace(id)
 
 			switch id {
@@ -442,7 +425,7 @@ func (e *KubectlCmdBuilder) contains(matchingTypes *api.Select, resourceType str
 }
 
 func (e *KubectlCmdBuilder) buildCommandPreview(botName string, state stateDetails) []api.Section {
-	resourceDetails, err := e.commandGuard.GetResourceDetails(state.verb, state.resourceType)
+	resourceDetails, err := e.CommandGuard.GetResourceDetails(state.verb, state.resourceType)
 	if err != nil {
 		e.log.WithFields(logrus.Fields{
 			"state": state,
@@ -480,10 +463,9 @@ func (e *KubectlCmdBuilder) buildCommandPreview(botName string, state stateDetai
 	return PreviewSection(botName, cmd, FilterSection(botName))
 }
 
-func (e *KubectlCmdBuilder) message(header, msg string) (api.Message, error) {
+func (e *KubectlCmdBuilder) message(msg string) (api.Message, error) {
 	return api.Message{
 		Base: api.Base{
-			Description: header,
 			Body: api.Body{
 				Plaintext: msg,
 			},
@@ -516,4 +498,18 @@ func getNonEmptyLines(in string) []string {
 		out = append(out, x)
 	}
 	return out
+}
+
+type (
+	executorFunc    func() (api.Message, error)
+	executorsRunner map[string]executorFunc
+)
+
+func (cmds executorsRunner) SelectAndRun(cmdVerb string) (api.Message, error) {
+	cmdVerb = strings.ToLower(cmdVerb)
+	fn, found := cmds[cmdVerb]
+	if !found {
+		return api.Message{}, errUnsupportedCommand
+	}
+	return fn()
 }

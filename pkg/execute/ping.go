@@ -3,10 +3,10 @@ package execute
 import (
 	"context"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/execute/command"
 )
@@ -44,7 +44,7 @@ func (e *PingExecutor) Commands() map[command.Verb]CommandFn {
 }
 
 // Ping responds with "pong" to the ping command
-func (e *PingExecutor) Ping(ctx context.Context, cmdCtx CommandContext) (interactive.Message, error) {
+func (e *PingExecutor) Ping(ctx context.Context, cmdCtx CommandContext) (api.Message, error) {
 	cmdVerb, _ := parseCmdVerb(cmdCtx.Args)
 	e.log.Debugf("Sending pong to %s", cmdCtx.Conversation.ID)
 	e.reportCommand(cmdVerb, cmdCtx.Conversation.CommandOrigin, cmdCtx.Platform)

@@ -3,6 +3,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"strings"
 	"time"
 
@@ -15,7 +16,6 @@ import (
 
 	"github.com/kubeshop/botkube/internal/analytics"
 	"github.com/kubeshop/botkube/internal/source"
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/event"
 	"github.com/kubeshop/botkube/pkg/filterengine"
@@ -54,7 +54,7 @@ type RecommendationFactory interface {
 // ActionProvider defines a provider that is responsible for automated actions.
 type ActionProvider interface {
 	RenderedActionsForEvent(event event.Event, sourceBindings []string) ([]event.Action, error)
-	ExecuteEventAction(ctx context.Context, action event.Action) interactive.GenericMessage
+	ExecuteEventAction(ctx context.Context, action event.Action) api.GenericMessage
 }
 
 // Controller watches Kubernetes resources and send events to notifiers.

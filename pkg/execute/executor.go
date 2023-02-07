@@ -4,12 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/kubeshop/botkube/pkg/api"
 	"regexp"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/execute/alias"
 	"github.com/kubeshop/botkube/pkg/execute/command"
@@ -77,8 +77,8 @@ func (flag CommandFlags) String() string {
 }
 
 // Execute executes commands and returns output
-func (e *DefaultExecutor) Execute(ctx context.Context) interactive.Message {
-	empty := interactive.Message{}
+func (e *DefaultExecutor) Execute(ctx context.Context) api.Message {
+	empty := api.Message{}
 	rawCmd := sanitizeCommand(e.message)
 
 	expandedRawCmd := alias.ExpandPrefix(rawCmd, e.cfg.Aliases)
@@ -100,10 +100,10 @@ func (e *DefaultExecutor) Execute(ctx context.Context) interactive.Message {
 	flags, err := ParseFlags(expandedRawCmd)
 	if err != nil {
 		e.log.Errorf("while parsing command flags %q: %s", expandedRawCmd, err.Error())
-		return interactive.Message{
-			Base: interactive.Base{
+		return api.Message{
+			Base: api.Base{
 				Description: header(cmdCtx),
-				Body: interactive.Body{
+				Body: api.Body{
 					Plaintext: err.Error(),
 				},
 			},
@@ -135,35 +135,9 @@ func (e *DefaultExecutor) Execute(ctx context.Context) interactive.Message {
 		return empty // user specified different target cluster
 	}
 
-	if e.kubectlExecutor.CanHandle(cmdCtx.Args) {
-		e.reportCommand(e.kubectlExecutor.GetCommandPrefix(cmdCtx.Args), cmdCtx.ExecutorFilter.IsActive())
-		out, err := e.kubectlExecutor.Execute(e.conversation.ExecutorBindings, cmdCtx.CleanCmd, e.conversation.IsAuthenticated, cmdCtx)
-		switch {
-		case err == nil:
-		case IsExecutionCommandError(err):
-			return respond(err.Error(), cmdCtx)
-		default:
-			// TODO: Return error when the DefaultExecutor is refactored as a part of https://github.com/kubeshop/botkube/issues/589
-			e.log.Errorf("while executing kubectl: %s", err.Error())
-			return empty
-		}
-		return respond(out, cmdCtx)
-	}
-
 	// commands below are executed only if the channel is authorized
 	if !e.conversation.IsAuthenticated {
 		return empty
-	}
-
-	if e.kubectlCmdBuilder.CanHandle(cmdCtx.Args) {
-		e.reportCommand(e.kubectlCmdBuilder.GetCommandPrefix(cmdCtx.Args), false)
-		out, err := e.kubectlCmdBuilder.Do(ctx, cmdCtx.Args, e.platform, e.conversation.ExecutorBindings, e.conversation.State, cmdCtx.BotName, header(cmdCtx), cmdCtx)
-		if err != nil {
-			// TODO: Return error when the DefaultExecutor is refactored as a part of https://github.com/kubeshop/botkube/issues/589
-			e.log.Errorf("while executing kubectl: %s", err.Error())
-			return empty
-		}
-		return out
 	}
 
 	isPluginCmd := e.pluginExecutor.CanHandle(e.conversation.ExecutorBindings, cmdCtx.Args)
@@ -178,7 +152,7 @@ func (e *DefaultExecutor) Execute(ctx context.Context) interactive.Message {
 			return e.ExecuteHelp(ctx, cmdCtx)
 		}
 		e.reportCommand(e.pluginExecutor.GetCommandPrefix(cmdCtx.Args), cmdCtx.ExecutorFilter.IsActive())
-		out, err := e.pluginExecutor.Execute(ctx, e.conversation.ExecutorBindings, cmdCtx.Args, cmdCtx.CleanCmd)
+		out, err := e.pluginExecutor.Execute(ctx, e.conversation.ExecutorBindings, e.conversation.State, cmdCtx)
 		switch {
 		case err == nil:
 		case IsExecutionCommandError(err):
@@ -188,7 +162,7 @@ func (e *DefaultExecutor) Execute(ctx context.Context) interactive.Message {
 			e.log.Errorf("while executing command %q: %s", cmdCtx.CleanCmd, err.Error())
 			return empty
 		}
-		return respond(out, cmdCtx)
+		return out
 	}
 
 	cmdVerb := command.Verb(strings.ToLower(cmdCtx.Args[0]))
@@ -233,12 +207,12 @@ func (e *DefaultExecutor) Execute(ctx context.Context) interactive.Message {
 	return msg
 }
 
-func (e *DefaultExecutor) ExecuteHelp(ctx context.Context, cmdCtx CommandContext) interactive.Message {
+func (e *DefaultExecutor) ExecuteHelp(ctx context.Context, cmdCtx CommandContext) api.Message {
 	e.reportCommand(e.pluginExecutor.GetCommandPrefix(cmdCtx.Args), cmdCtx.ExecutorFilter.IsActive())
 	msg, err := e.pluginExecutor.Help(ctx, e.conversation.ExecutorBindings, cmdCtx.Args, cmdCtx.CleanCmd)
 	if err != nil {
 		e.log.Errorf("while executing help command %q: %s", cmdCtx.CleanCmd, err.Error())
-		return interactive.Message{}
+		return api.Message{}
 	}
 	if msg.Body.Plaintext == "" && msg.Body.CodeBlock == "" {
 		msg.Body.Plaintext = emptyResponseMsg
@@ -257,19 +231,19 @@ func (e *DefaultExecutor) ExecuteHelp(ctx context.Context, cmdCtx CommandContext
 	return msg
 }
 
-func respond(msg string, cmdCtx CommandContext) interactive.Message {
+func respond(msg string, cmdCtx CommandContext) api.Message {
 	msg = cmdCtx.ExecutorFilter.Apply(msg)
-	msgBody := interactive.Body{
+	msgBody := api.Body{
 		CodeBlock: msg,
 	}
 	if msg == "" {
-		msgBody = interactive.Body{
+		msgBody = api.Body{
 			Plaintext: emptyResponseMsg,
 		}
 	}
 
-	message := interactive.Message{
-		Base: interactive.Base{
+	message := api.Message{
+		Base: api.Base{
 			Description: header(cmdCtx),
 			Body:        msgBody,
 		},
@@ -319,10 +293,10 @@ func appendByUserOnlyIfNeeded(cmd, user string, origin command.Origin) string {
 	return fmt.Sprintf("%s by %s", cmd, user)
 }
 
-func filterInput(id, botName string) interactive.LabelInput {
-	return interactive.LabelInput{
+func filterInput(id, botName string) api.LabelInput {
+	return api.LabelInput{
 		Command:          fmt.Sprintf("%s %s --filter=", botName, id),
-		DispatchedAction: interactive.DispatchInputActionOnEnter,
+		DispatchedAction: api.DispatchInputActionOnEnter,
 		Placeholder:      "String pattern to filter by",
 		Text:             "Filter output",
 	}

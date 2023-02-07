@@ -2,12 +2,12 @@ package execute
 
 import (
 	"context"
+	"github.com/kubeshop/botkube/pkg/api"
 
 	"github.com/sirupsen/logrus"
 	"github.com/slack-go/slack"
 
 	"github.com/kubeshop/botkube/internal/plugin"
-	"github.com/kubeshop/botkube/pkg/bot/interactive"
 	"github.com/kubeshop/botkube/pkg/config"
 	"github.com/kubeshop/botkube/pkg/execute/command"
 	"github.com/kubeshop/botkube/pkg/execute/kubectl"
@@ -57,7 +57,7 @@ type DefaultExecutorFactoryParams struct {
 
 // Executor is an interface for processes to execute commands
 type Executor interface {
-	Execute(context.Context) interactive.Message
+	Execute(context.Context) api.Message
 }
 
 // ConfigPersistenceManager manages persistence of the configuration.
