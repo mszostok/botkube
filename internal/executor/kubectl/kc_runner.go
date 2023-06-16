@@ -2,6 +2,7 @@ package kubectl
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -80,4 +81,21 @@ func isNamespaceFlagSet(cmd string) (bool, error) {
 		return false, err
 	}
 	return isAllNs || isNs != "", nil
+}
+
+type KubeconfigScopedRunner struct {
+	underlying     kcRunner
+	kubeconfigPath string
+}
+
+func NewKubeconfigScopedRunner(underlying kcRunner, kubeconfigPath string) *KubeconfigScopedRunner {
+	return &KubeconfigScopedRunner{underlying: underlying, kubeconfigPath: kubeconfigPath}
+}
+
+func (k *KubeconfigScopedRunner) RunKubectlCommand(ctx context.Context, defaultNamespace, cmd string) (string, error) {
+	if k.kubeconfigPath == "" {
+		return "", errors.New("kubeconfig is missing")
+	}
+
+	return k.underlying.RunKubectlCommand(ctx, k.kubeconfigPath, defaultNamespace, cmd)
 }
